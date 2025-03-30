@@ -264,7 +264,7 @@ function Home() {
         </p>
       )}
 
-      {/* 3. ARCHIPELAGO ISLAND CARDS (PESONA INDONESIA DI SETIAP PULAUNYA) */}
+      {/* 3. ARCHIPELAGO ISLAND CARDS (PESONA INDONESIA DI SETIAP PULAUNYA — 2 ROWS x 3 CARDS) */}
       <section className="section">
         <div className="section-heading-row">
           <div>
@@ -277,6 +277,12 @@ function Home() {
                 'The Enchantment of Indonesia Across Every Island',
               )}
             </h2>
+            <p className="muted" style={{ margin: '4px 0 0', maxWidth: '720px' }}>
+              {tx(
+                'Pilih salah satu dari 6 gugus kepulauan utama Nusantara untuk langsung mengunjungi destinasi ikonik atau menyaring direktori kabupaten/kota.',
+                'Select any of Indonesia’s 6 major island groups to jump directly to iconic destinations or filter the 514-city directory.',
+              )}
+            </p>
           </div>
           <a href="#jelajah-kepulauan" className="pill">
             {tx('Lihat Semua 514 Kab/Kota ↓', 'Browse All 514 Cities ↓')}
@@ -285,26 +291,84 @@ function Home() {
 
         <div className="region-cards-grid">
           {ARCHIPELAGO_REGIONS.map(region => (
-            <a
+            <article
               key={region.id}
-              href="#jelajah-kepulauan"
-              onClick={() => handleSelectRegion(region.id)}
               className="region-showcase-card"
-              style={{ background: region.gradient }}
             >
-              <div className="region-card-top">
-                <span className="region-card-icon">{region.icon}</span>
-                <span className="region-card-count mono">
-                  {regionCounts[region.id] ?? 0}{' '}
-                  {tx('Kab/Kota', 'Cities')}
-                </span>
+              <div
+                className="region-card-backdrop"
+                style={{ backgroundImage: `url(${region.imageUrl})` }}
+              />
+              <div
+                className="region-card-overlay"
+                style={{ background: region.gradient }}
+              />
+
+              <div className="region-card-inner">
+                <div className="region-card-top">
+                  <span className="region-card-emblem">
+                    <span>{region.icon}</span>
+                    <span className="mono">
+                      {tx('KEPULAUAN', 'REGION')} {region.orderLabel}
+                    </span>
+                  </span>
+                  <div className="region-card-badges">
+                    <span className="region-card-count mono">
+                      {region.provincePrefixes.length}{' '}
+                      {tx('Provinsi', 'Provinces')}
+                    </span>
+                    <span className="region-card-count mono highlight">
+                      {regionCounts[region.id] ?? 0}{' '}
+                      {tx('Kab/Kota', 'Cities')}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="region-card-body">
+                  <p className="region-card-kicker">
+                    {locale === 'en' ? region.taglineEn : region.tagline}
+                  </p>
+                  <h3>{locale === 'en' ? region.nameEn : region.name}</h3>
+                  <p className="region-card-desc">
+                    {locale === 'en' ? region.descriptionEn : region.description}
+                  </p>
+                </div>
+
+                <div className="region-card-quick-Block">
+                  <span className="region-quick-label">
+                    {tx('Destinasi Populer:', 'Top Destinations:')}
+                  </span>
+                  <div className="region-quick-chips">
+                    {region.quickCities.map(qc => (
+                      <Link
+                        key={qc.slug}
+                        to="/kota/$citySlug"
+                        params={{ citySlug: qc.slug }}
+                        className="region-quick-chip"
+                      >
+                        📍 {locale === 'en' ? qc.nameEn : qc.name}
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="region-card-footer">
+                  <a
+                    href="#jelajah-kepulauan"
+                    onClick={() => handleSelectRegion(region.id)}
+                    className="region-card-cta-btn"
+                  >
+                    <span>
+                      {tx(
+                        `Jelajahi ${regionCounts[region.id] ?? 0} Kab/Kota di ${region.shortName}`,
+                        `Explore ${regionCounts[region.id] ?? 0} Cities in ${region.shortNameEn}`,
+                      )}
+                    </span>
+                    <span aria-hidden="true">↓</span>
+                  </a>
+                </div>
               </div>
-              <h3>{locale === 'en' ? region.nameEn : region.name}</h3>
-              <p>{locale === 'en' ? region.taglineEn : region.tagline}</p>
-              <span className="region-card-cta">
-                {tx('Jelajahi Kepulauan →', 'Explore Island Region →')}
-              </span>
-            </a>
+            </article>
           ))}
         </div>
       </section>
