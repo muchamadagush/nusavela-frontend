@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { DEFAULT_CATEGORIES, DEFAULT_CITIES } from './default-cities'
 
 export const citySchema = z.object({
   id: z.string(),
@@ -75,9 +76,68 @@ export async function api<T>(
 }
 
 export const segment = encodeURIComponent
-export const cities = () => api('/cities', citySchema.array())
-export const city = (slug: string) => api(`/cities/${segment(slug)}`, citySchema)
-export const categories = () => api('/categories', categorySchema.array())
+
+export async function cities(): Promise<City[]> {
+  try {
+    const list = await api('/cities', citySchema.array())
+    return list.length > 0 ? list : DEFAULT_CITIES
+  } catch {
+    return DEFAULT_CITIES
+  }
+}
+
+export async function city(slug: string): Promise<City> {
+  try {
+    return await api(`/cities/${segment(slug)}`, citySchema)
+  } catch {
+    const normalized = slug.toLowerCase().trim()
+    const found = DEFAULT_CITIES.find(
+      c =>
+        c.slug === normalized ||
+        c.short_name?.toLowerCase() === normalized ||
+        c.name.toLowerCase() === normalized,
+    )
+    if (found) return found
+    throw new Error(`Kota "${slug}" tidak ditemukan`)
+  }
+}
+
+export async function categories(): Promise<Category[]> {
+  try {
+    const list = await api('/categories', categorySchema.array())
+    return list.length > 0 ? list : DEFAULT_CATEGORIES
+  } catch {
+    return DEFAULT_CATEGORIES
+  }
+}
+
+function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const toRad = (deg: number) => (deg * Math.PI) / 180
+  const dLat = toRad(lat2 - lat1)
+  const dLon = toRad(lon2 - lon1)
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2
+  return 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+}
+
+export async function nearestCity(lat: number, lng: number): Promise<City> {
+  try {
+    return await api(`/cities/nearest?lat=${lat}&lng=${lng}`, citySchema)
+  } catch {
+    let best = DEFAULT_CITIES[0]
+    let bestDist = Infinity
+    for (const c of DEFAULT_CITIES) {
+      const d = haversineKm(lat, lng, c.latitude, c.longitude)
+      if (d < bestDist) {
+        bestDist = d
+        best = c
+      }
+    }
+    return best
+  }
+}
+
 export const sitemapPlaces = (page = 1) =>
   api(`/sitemap/places?page=${page}`, sitemapPlaceSchema.array())
 
