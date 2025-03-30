@@ -4,6 +4,16 @@ import { useEffect, useState } from 'react'
 import { I18nProvider, useI18n } from '../lib/i18n'
 import styles from '../styles/app.css?url'
 
+const TRAVELPAYOUTS_DRIVE_HEAD_SCRIPT = `
+  (function () {
+      var script = document.createElement("script");
+      script.async = 1;
+      script.setAttribute("data-cmp-ab","2");
+      script.src = 'https://tpembars.com/NTk1ODM0.js?t=595834';
+      document.head.appendChild(script);
+  })();
+`
+
 const GOOGLE_FONTS_URL =
   'https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Playfair+Display:ital,wght@0,600;0,700;1,600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap'
 
@@ -322,6 +332,16 @@ function Root() {
     <html lang="id" data-theme={theme}>
       <head>
         <HeadContent />
+        <script
+          {...({ nowprocket: '' } as Record<string, string>)}
+          data-noptimize="1"
+          data-cfasync="false"
+          data-wpfc-render="false"
+          seraph-accel-crit="1"
+          data-no-defer="1"
+          data-cmp-ab="2"
+          dangerouslySetInnerHTML={{ __html: TRAVELPAYOUTS_DRIVE_HEAD_SCRIPT }}
+        />
       </head>
       <body>
         <QueryClientProvider client={client}>

@@ -1,7 +1,9 @@
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { createFileRoute, Link, useRouter } from '@tanstack/react-router'
+import { useEffect, useState } from 'react'
 import { api, categories, city, cacheHeaders, seo, placeSchema } from '../lib/api'
 import { formatTimezoneLabel } from '../lib/format'
 import { localizeCategoryName, localizeCityName, useI18n } from '../lib/i18n'
+import { syncCityFromPublicApi } from '../lib/monetization'
 import {
   CATEGORY_META,
   getCityRegion,
@@ -56,6 +58,12 @@ export const Route = createFileRoute('/kota/$citySlug/')({
         ).catch(() => null),
       ])
 
+    const needsAutoSync =
+      tourismRaw !== null &&
+      tourismRaw.length === 0 &&
+      hospitalsRaw !== null &&
+      hospitalsRaw.length === 0
+
     const tourism =
       tourismRaw && tourismRaw.length > 0
         ? tourismRaw
@@ -79,6 +87,7 @@ export const Route = createFileRoute('/kota/$citySlug/')({
       events,
       tourism,
       hospitals,
+      needsAutoSync,
     }
   },
   headers: cacheHeaders,
@@ -96,10 +105,65 @@ export const Route = createFileRoute('/kota/$citySlug/')({
 
 function Dashboard() {
   const { locale, tx } = useI18n()
+  const router = useRouter()
   const d = Route.useLoaderData()
   const region = getCityRegion(d.city)
   const province = getProvinceName(d.city, locale)
   const displayCityName = localizeCityName(d.city.name, locale)
+
+  const [syncBusy, setSyncBusy] = useState(false)
+  const [syncMessage, setSyncMessage] = useState('')
+
+  useEffect(() => {
+    setSyncMessage('')
+    if (!d.needsAutoSync) return
+    let cancelled = false
+    setSyncBusy(true)
+    syncCityFromPublicApi(d.city.slug)
+      .then(res => {
+        if (cancelled) return
+        if (res.synced_from_overpass > 0) {
+          setSyncMessage(
+            tx(
+              `✓ Otomatis menyinkronkan ${res.synced_from_overpass} tempat dari OpenStreetMap Overpass & Wikipedia API.`,
+              `✓ Automatically synced ${res.synced_from_overpass} places from OpenStreetMap Overpass & Wikipedia API.`,
+            ),
+          )
+          void router.invalidate()
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setSyncBusy(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [d.city.slug, d.needsAutoSync])
+
+  async function handleManualSync() {
+    setSyncBusy(true)
+    setSyncMessage('')
+    try {
+      const res = await syncCityFromPublicApi(d.city.slug)
+      setSyncMessage(
+        tx(
+          `✓ Berhasil menyinkronkan ${res.synced_from_overpass} titik lokasi (Total aktif di ${displayCityName}: ${res.total_active_places} tempat).`,
+          `✓ Successfully synced ${res.synced_from_overpass} POIs (Total active in ${displayCityName}: ${res.total_active_places} places).`,
+        ),
+      )
+      await router.invalidate()
+    } catch {
+      setSyncMessage(
+        tx(
+          'Sinkronisasi API publik sedang sibuk atau offline. Silakan coba beberapa saat lagi.',
+          'Public API sync is busy or offline. Please try again shortly.',
+        ),
+      )
+    } finally {
+      setSyncBusy(false)
+    }
+  }
 
   return (
     <main id="main">
@@ -116,9 +180,24 @@ function Dashboard() {
               ? `${region.nameEn.toUpperCase()} ARCHIPELAGO · ${province.toUpperCase()} PROVINCE`
               : `KEPULAUAN ${region.name.toUpperCase()} · PROVINSI ${province.toUpperCase()}`}
           </span>
-          <span className="badge mono">
-            {tx('Zona Waktu:', 'Time Zone:')} {formatTimezoneLabel(d.city.timezone)}
-          </span>
+          <div className="row">
+            <span className="badge mono">
+              {tx('Zona Waktu:', 'Time Zone:')} {formatTimezoneLabel(d.city.timezone)}
+            </span>
+            <button
+              type="button"
+              onClick={handleManualSync}
+              disabled={syncBusy}
+              className="button hero-cta-secondary button-sm"
+            >
+              {syncBusy
+                ? tx('🔄 Menyinkronkan API Publik…', '🔄 Syncing Public API…')
+                : tx(
+                    '🔄 Sync Data Kota (Overpass + Wiki)',
+                    '🔄 Sync City POIs (Overpass + Wiki)',
+                  )}
+            </button>
+          </div>
         </div>
 
         <h1>
@@ -140,6 +219,7 @@ function Dashboard() {
               ✦ {tx('Kota Prioritas Nasional', 'National Priority Destination')}
             </span>
           )}
+          {syncMessage && <span>{syncMessage}</span>}
         </div>
       </section>
 

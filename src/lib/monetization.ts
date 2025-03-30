@@ -18,7 +18,7 @@ function getStay22Aid(): string {
 function getTravelpayoutsMarker(): string {
   return (
     (import.meta.env.VITE_TRAVELPAYOUTS_MARKER as string | undefined)?.trim() ||
-    'nusavela'
+    '595834'
   )
 }
 
@@ -182,4 +182,22 @@ export async function submitSelfServeOrder(payload: {
     method: 'POST',
     body: JSON.stringify(payload),
   })
+}
+
+export const citySyncResultSchema = z.object({
+  city_id: z.string(),
+  city_slug: z.string(),
+  city_name: z.string(),
+  synced_from_overpass: z.number(),
+  previous_places: z.number(),
+  total_active_places: z.number(),
+  sources: z.array(z.string()),
+})
+
+export async function syncCityFromPublicApi(citySlug: string) {
+  return api(
+    `/sync/city/${encodeURIComponent(citySlug)}`,
+    citySyncResultSchema,
+    { method: 'POST' },
+  )
 }
