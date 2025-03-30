@@ -11,6 +11,7 @@ import {
   trackClick,
 } from '../lib/api'
 import { formatTicketRange, sanitizePhoneDigits } from '../lib/format'
+import { getFallbackPlacesForCity } from '../lib/regions'
 import { DirectoryMap } from '../components/DirectoryMap'
 import { CommunityForm } from '../components/CommunityForm'
 import { Breadcrumbs } from '../components/Breadcrumbs'
@@ -23,7 +24,14 @@ export const Route = createFileRoute('/kota/$citySlug/$categorySlug/$placeSlug')
       api(
         `/kota/${encodeURIComponent(p.citySlug)}/${encodeURIComponent(p.categorySlug)}/${encodeURIComponent(p.placeSlug)}`,
         placeSchema,
-      ),
+      ).catch(async () => {
+        const cFallback = await city(p.citySlug)
+        const found = getFallbackPlacesForCity(cFallback, p.categorySlug).find(
+          item => item.slug === p.placeSlug,
+        )
+        if (found) return found
+        throw new Error('Tempat tidak ditemukan')
+      }),
     ])
     const category = cats.find(x => x.slug === p.categorySlug)
     if (!category) throw new Error('Kategori tidak ditemukan')

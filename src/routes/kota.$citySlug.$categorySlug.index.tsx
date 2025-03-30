@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { api, categories, city, cacheHeaders, placeSchema, seo } from '../lib/api'
 import { directorySearch, queryString } from '../lib/search'
+import { getFallbackPlacesForCity } from '../lib/regions'
 import { DirectoryMap } from '../components/DirectoryMap'
 import { PlaceCard } from '../components/PlaceCard'
 import { Breadcrumbs } from '../components/Breadcrumbs'
@@ -21,7 +22,8 @@ export const Route = createFileRoute('/kota/$citySlug/$categorySlug/')({
     ])
     const category = cats.find(x => x.slug === p.categorySlug)
     if (!category) throw new Error('Kategori tidak ditemukan')
-    return { city: c, categories: cats, category, places }
+    const finalPlaces = places.length > 0 ? places : getFallbackPlacesForCity(c, p.categorySlug)
+    return { city: c, categories: cats, category, places: finalPlaces }
   },
   headers: cacheHeaders,
   head: ({ loaderData: d }) =>

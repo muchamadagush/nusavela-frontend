@@ -3,6 +3,7 @@ import { useNavigate } from '@tanstack/react-router'
 import { nearestCity, type City } from '../lib/api'
 import { DEFAULT_CITIES } from '../lib/default-cities'
 import { formatTimezoneLabel } from '../lib/format'
+import { getCityRegion, getProvinceName } from '../lib/regions'
 
 const ALIAS_MAP: Record<string, string[]> = {
   jogja: ['yogyakarta', 'sleman', 'bantul', 'kulon progo', 'gunungkidul'],
@@ -12,6 +13,10 @@ const ALIAS_MAP: Record<string, string[]> = {
   lombok: ['mataram', 'lombok barat', 'lombok tengah', 'lombok timur', 'lombok utara'],
   labuanbajo: ['manggarai barat'],
   'labuan bajo': ['manggarai barat'],
+  komodo: ['manggarai barat'],
+  bromo: ['malang', 'probolinggo', 'pasuruan', 'lumajang'],
+  toba: ['samosir', 'toba', 'apanuli utara', 'simelungun'],
+  bunaken: ['manado'],
   makasar: ['makassar'],
   'ujung pandang': ['makassar'],
   betawi: ['jakarta'],
@@ -40,6 +45,8 @@ export function matchCities(catalog: City[], rawQuery: string, limit = 25): City
     const nameNorm = normalizeQuery(c.name)
     const shortNorm = normalizeQuery(c.short_name ?? '')
     const slugNorm = normalizeQuery(c.slug.replace(/-/g, ' '))
+    const provNorm = normalizeQuery(getProvinceName(c))
+    const regionNorm = normalizeQuery(getCityRegion(c).name)
 
     let bestScore = 0
     for (const term of expandedTerms) {
@@ -50,9 +57,11 @@ export function matchCities(catalog: City[], rawQuery: string, limit = 25): City
       } else if (nameNorm === `kabupaten ${term}`) {
         bestScore = Math.max(bestScore, 92)
       } else if (shortNorm.startsWith(term) || nameNorm.startsWith(term)) {
-        bestScore = Math.max(bestScore, 85)
+        bestScore = Math.max(bestScore, 86)
       } else if (nameNorm.includes(term) || shortNorm.includes(term) || slugNorm.includes(term)) {
-        bestScore = Math.max(bestScore, 70)
+        bestScore = Math.max(bestScore, 74)
+      } else if (provNorm.includes(term) || regionNorm.includes(term)) {
+        bestScore = Math.max(bestScore, 60)
       }
     }
 
@@ -63,7 +72,12 @@ export function matchCities(catalog: City[], rawQuery: string, limit = 25): City
   }
 
   return scored
-    .sort((a, b) => b.score - a.score || (a.city.tier ?? 2) - (b.city.tier ?? 2) || a.city.name.localeCompare(b.city.name, 'id'))
+    .sort(
+      (a, b) =>
+        b.score - a.score ||
+        (a.city.tier ?? 2) - (b.city.tier ?? 2) ||
+        a.city.name.localeCompare(b.city.name, 'id'),
+    )
     .slice(0, limit)
     .map(item => item.city)
 }
@@ -80,8 +94,8 @@ export function CityPicker({ cities }: { cities: City[] }) {
 
   const matches = useMemo(() => matchCities(catalog, q, 25), [catalog, q])
 
-  const featured = useMemo(() => catalog.filter(c => c.tier === 1).slice(0, 8), [catalog])
-  const quickCities = featured.length ? featured : catalog.slice(0, 8)
+  const featured = useMemo(() => catalog.filter(c => c.tier === 1).slice(0, 10), [catalog])
+  const quickCities = featured.length ? featured : catalog.slice(0, 10)
 
   const choose = (c: City) => {
     setOpen(false)
@@ -114,12 +128,22 @@ export function CityPicker({ cities }: { cities: City[] }) {
   }
 
   return (
-    <section className="panel city-picker-panel">
-      <label htmlFor={id} className="picker-label">
-        Kota mana yang ingin Anda jelajahi?
-      </label>
+    <section className="panel city-picker-panel" aria-label="Pencarian destinasi kabupaten dan kota">
+      <div className="picker-header-row">
+        <div>
+          <label htmlFor={id} className="picker-label">
+            Kota atau pulau mana yang ingin Anda jelajahi hari ini?
+          </label>
+          <p className="picker-sublabel">
+            Cari langsung dari <strong>{catalog.length} kabupaten/kota</strong> di 38 provinsi (coba ketik: <em>Bandung</em>, <em>Bali</em>, <em>Yogyakarta</em>, <em>Labuan Bajo</em>, atau <em>Raja Ampat</em>)
+          </p>
+        </div>
+        <span className="badge verified mono">38 Provinsi · 514 Daerah</span>
+      </div>
+
       <div className="picker-bar">
         <div className="picker-input-wrap">
+          <span className="picker-search-icon" aria-hidden="true">🔍</span>
           <input
             id={id}
             role="combobox"
@@ -130,7 +154,7 @@ export function CityPicker({ cities }: { cities: City[] }) {
               open && matches[active] ? `${id}-${active}` : undefined
             }
             value={q}
-            placeholder="Ketik nama kabupaten atau kota (misal: Bandung, Surabaya, Sragen)…"
+            placeholder="Ketik nama kota, kabupaten, provinsi, atau destinasi (misal: Bandung, Bali, Jogja)…"
             onFocus={() => setOpen(true)}
             onChange={e => {
               setQ(e.target.value)
@@ -175,24 +199,35 @@ export function CityPicker({ cities }: { cities: City[] }) {
 
       {open && matches.length > 0 && (
         <ul role="listbox" id={`${id}-list`} className="listbox">
-          {matches.map((c, i) => (
-            <li
-              key={c.id}
-              role="option"
-              id={`${id}-${i}`}
-              aria-selected={active === i}
-            >
-              <button type="button" onClick={() => choose(c)}>
-                <span>{c.name}</span>
-                <span className="row">
-                  {c.tier === 1 && <span className="badge">Unggulan</span>}
-                  {c.timezone && (
-                    <small className="mono">{formatTimezoneLabel(c.timezone)}</small>
-                  )}
-                </span>
-              </button>
-            </li>
-          ))}
+          {matches.map((c, i) => {
+            const region = getCityRegion(c)
+            const province = getProvinceName(c)
+            return (
+              <li
+                key={c.id}
+                role="option"
+                id={`${id}-${i}`}
+                aria-selected={active === i}
+              >
+                <button type="button" onClick={() => choose(c)}>
+                  <div className="listbox-city-main">
+                    <strong>{c.name}</strong>
+                    <span className="listbox-city-meta">
+                      {region.icon} {province} · Kepulauan {region.shortName}
+                    </span>
+                  </div>
+                  <span className="row">
+                    {c.tier === 1 && <span className="badge">Destinasi Unggulan</span>}
+                    {c.timezone && (
+                      <small className="mono badge-tz">
+                        {formatTimezoneLabel(c.timezone)}
+                      </small>
+                    )}
+                  </span>
+                </button>
+              </li>
+            )
+          })}
         </ul>
       )}
       {open && !matches.length && <p role="status">Kota tidak ditemukan.</p>}
@@ -200,7 +235,7 @@ export function CityPicker({ cities }: { cities: City[] }) {
 
       {quickCities.length > 0 && (
         <div className="quick-cities">
-          <span className="muted">Populer:</span>
+          <span className="muted">✨ Populer dijelajahi:</span>
           {quickCities.map(c => (
             <button
               key={c.id}
@@ -208,7 +243,7 @@ export function CityPicker({ cities }: { cities: City[] }) {
               className="chip"
               onClick={() => choose(c)}
             >
-              {c.short_name || c.name}
+              {getCityRegion(c).icon} {c.short_name || c.name}
             </button>
           ))}
         </div>

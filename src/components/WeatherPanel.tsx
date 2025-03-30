@@ -19,24 +19,37 @@ export function WeatherPanel({
   timezone?: string
 }) {
   return (
-    <section className="panel">
+    <section className="panel weather-panel">
+      <p className="eyebrow">KONDISI ATMOSFER LOKAL</p>
       <h2>Cuaca saat ini</h2>
       {weather ? (
-        <>
-          <p className="mono">{Math.round(weather.temperature_c)} °C</p>
-          <p>{weather.description}</p>
-          <p className="muted">
+        <div className="weather-content">
+          <div className="weather-temp-row">
+            <span className="weather-icon" aria-hidden="true">🌤️</span>
+            <div>
+              <p className="mono weather-temp">{Math.round(weather.temperature_c)} °C</p>
+              <p className="weather-desc">{weather.description}</p>
+            </div>
+          </div>
+          <p className="muted weather-meta">
             Pengamatan:{' '}
             <time dateTime={new Date(weather.observed_at * 1000).toISOString()}>
               {formatDateTimeId(weather.observed_at, timezone)}
             </time>
           </p>
-          <a href={weather.attribution.url} rel="noopener noreferrer" target="_blank">
-            Sumber: OpenWeather
+          <a
+            href={weather.attribution.url}
+            rel="noopener noreferrer"
+            target="_blank"
+            className="weather-source"
+          >
+            Sumber: OpenWeather ↗
           </a>
-        </>
+        </div>
       ) : (
-        <p role="status">Informasi cuaca belum tersedia.</p>
+        <p role="status" className="muted">
+          Informasi cuaca belum tersedia.
+        </p>
       )}
     </section>
   )

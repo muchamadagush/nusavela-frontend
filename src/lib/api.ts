@@ -78,12 +78,8 @@ export async function api<T>(
 export const segment = encodeURIComponent
 
 export async function cities(): Promise<City[]> {
-  try {
-    const list = await api('/cities', citySchema.array())
-    return list.length > 0 ? list : DEFAULT_CITIES
-  } catch {
-    return DEFAULT_CITIES
-  }
+  const list = await api('/cities', citySchema.array())
+  return list.length > 0 ? list : DEFAULT_CITIES
 }
 
 export async function city(slug: string): Promise<City> {
@@ -103,12 +99,8 @@ export async function city(slug: string): Promise<City> {
 }
 
 export async function categories(): Promise<Category[]> {
-  try {
-    const list = await api('/categories', categorySchema.array())
-    return list.length > 0 ? list : DEFAULT_CATEGORIES
-  } catch {
-    return DEFAULT_CATEGORIES
-  }
+  const list = await api('/categories', categorySchema.array())
+  return list.length > 0 ? list : DEFAULT_CATEGORIES
 }
 
 function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
