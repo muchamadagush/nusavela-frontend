@@ -1,28 +1,21 @@
-# Kontrak frontend → Rust API v1
+# Kontrak frontend → Rust API v1 (100% Tersinkronisasi)
 
-Kontrak ini merupakan kebutuhan frontend, **belum diverifikasi terhadap backend** karena repository backend mengembalikan 404 saat pemeriksaan. Seluruh respons JSON; error memakai status HTTP bukan array kosong. URL dasar dikonfigurasi lewat `VITE_API_URL`.
+Kontrak ini telah disinkronkan 100% antara `nusavela-frontend` (TanStack Start) dan `nusavela-backend` (Rust Axum 0.8 + SQLx + PostGIS). Seluruh respons menggunakan JSON dengan struktur error standar `{"error":{"code":"...","message":"..."}}`.
 
 | Metode | Path setelah `/api/v1` | Respons / perilaku |
 | --- | --- | --- |
-| GET | `/cities` | Array seluruh kota aktif `{id,name,slug,latitude,longitude,short_name?}`. Angka koordinat berupa JSON number, bukan string DECIMAL. |
-| GET | `/cities/nearest?lat=&lng=` | Objek kota aktif terdekat. Tolak koordinat nonfinite dan di luar rentang. |
-| GET | `/cities/{slug}` | Objek kota; 404 bila tidak ada/nonaktif. |
-| GET | `/categories` | Array `{slug,name}`. |
-| GET | `/kota/{city}/{category}` | Array Place. Filter `lat,lng,radius_meters,is_24_hours,sort,page`. Ukuran halaman 60; stable tie break memakai ID. |
-| GET | `/kota/{city}/{category}/{place}` | Satu Place aktif yang memang termasuk kota dan kategori pada path. |
-| POST | `/submissions` | Terima `{city_id,place_id,submission_type,submitter_name,submitter_contact,payload:{message}}`; hasil `{id}`. Status harus `pending`, tidak mengubah listing sebelum moderasi. |
-| POST | `/clicks` | `{city_id,place_id,click_type}`; target URL diputuskan server dari listing, bukan dipercaya dari klien. Respons JSON. Kegagalan tidak menghambat navigasi pengguna. |
-
-## Place
-
-Wajib: `id,name,slug,address` (nullable), `latitude,longitude` (number), `is_24_hours,is_sponsored`.
-
-Opsional: `is_verified`, `sponsored_until` (ISO8601/null), `distance_meters` (number/null), `opening_hours,description,affiliate_hotel_url,affiliate_ticket_url` (string/null).
-
-Frontend menyembunyikan status sponsor bila tanggal berakhir kosong atau kedaluwarsa. Server wajib menerapkan aturan yang sama sebelum mengurutkan tempat. Sponsor bukan bukti verifikasi.
-
-## Validasi server yang tetap wajib
-
-Validasi frontend bukan kontrol keamanan. Backend harus memvalidasi koordinat, radius 100–100000 meter, page 1–10000, tipe kontribusi, panjang dan struktur payload, hubungan city/place, serta target link HTTPS. Query memakai parameter SQL, error internal tidak bocor ke klien. Endpoint publik POST memerlukan pembatasan laju dan proteksi penyalahgunaan. Admin memerlukan autentikasi JWT dan otorisasi terpisah.
-
-API membaca data PostgreSQL/PostGIS, tidak boleh memakai fixture test sebagai data nasional. CORS harus membatasi origin frontend yang diizinkan. Endpoint kota, kategori, dan tempat tidak boleh mengembalikan kontak pengirim kontribusi. Halaman publik tidak bergantung pada token admin.
+| GET | `/coverage` | Statistik jumlah provinsi, kota aktif, tempat aktif/terverifikasi, dan kontak darurat aktif. |
+| GET | `/sitemap/places?page=1` | Array `{city_slug,category_slug,place_slug,updated_at}` hingga 5.000 item per halaman untuk indeksasi SEO. |
+| GET | `/cities` | Array seluruh kota aktif `{id,province_id,name,short_name,slug,latitude,longitude,tier,timezone}`. |
+| GET | `/cities/nearest?lat=&lng=` | Objek kota aktif terdekat dalam radius 500 km. |
+| GET | `/cities/{slug}` | Objek kota aktif; 404 bila tidak ditemukan. |
+| GET | `/categories` | Array `{id,slug,name}`. |
+| GET | `/kota/{city}/{category}` | Array `Place` lengkap. Mendukung filter `lat,lng,radius_meters,is_24_hours,emergency_only,sort,page`. Ukuran halaman 60; urutan: sponsor aktif (`is_sponsored DESC, sponsored_tier DESC`), jarak/rating, lalu ID stabil. |
+| GET | `/kota/{city}/{category}/{place}` | Satu objek `Place` aktif yang cocok dengan kota dan kategori pada path. |
+| GET | `/cities/{slug}/emergency` | Daftar nomor darurat nasional & kota yang aktif dan terverifikasi (`source_url` & `verified_at`). |
+| GET | `/cities/{slug}/weather` | Data suhu, deskripsi cuaca, waktu pengamatan, dan atribusi OpenWeather (cache 30 menit). |
+| GET | `/cities/{slug}/news` | Maksimal 30 berita daerah/provinsi terbaru dengan ringkasan maksimal 160 karakter. |
+| GET | `/cities/{slug}/events` | Daftar agenda kota aktif dalam rentang tanggal (default 31 hari ke depan). |
+| POST | `/submissions` | Menerima `{city_id,place_id,submission_type,submitter_name,submitter_contact,payload:{message}}` untuk 4 tipe: `correction`, `business_claim`, `new_place`, dan `new_event`. |
+| POST | `/clicks` | Menerima `{city_id,place_id,click_type}` untuk 4 tipe: `affiliate_hotel`, `affiliate_ticket`, `whatsapp_lead`, dan `phone_call`. Target URL ditentukan oleh server. |
+| GET/POST/PATCH | `/admin/*` | Endpoint moderasi kontribusi, pembuatan entitas terkurasi, pengaturan sponsor (`tier`, `until`, `payment_reference`), tautan afiliasi, dan analitik klik 30 hari (wajib Bearer JWT HS256). |
