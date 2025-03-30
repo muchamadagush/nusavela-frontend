@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { z } from 'zod'
 import { api } from '../lib/api'
+import { useI18n } from '../lib/i18n'
 
 interface CommunityFormProps {
   cityId: string
@@ -15,23 +16,54 @@ export function CommunityForm({
   heading,
   defaultOpen = false,
 }: CommunityFormProps) {
+  const { tx } = useI18n()
   const [status, setStatus] = useState('')
   const [busy, setBusy] = useState(false)
 
   const title =
     heading ||
     (placeId
-      ? 'Koreksi informasi atau klaim usaha'
-      : 'Kontribusi warga & agenda daerah')
+      ? tx(
+          'Koreksi informasi atau klaim usaha',
+          'Submit a correction or claim this business',
+        )
+      : tx(
+          'Kontribusi warga & agenda daerah',
+          'Community contribution & local event submission',
+        ))
 
   const options = placeId
     ? [
-        { value: 'correction', label: 'Koreksi informasi (jam buka, alamat, harga)' },
-        { value: 'business_claim', label: 'Klaim usaha & pengajuan mitra UMKM' },
+        {
+          value: 'correction',
+          label: tx(
+            'Koreksi informasi (jam buka, alamat, harga)',
+            'Information correction (hours, address, ticket price)',
+          ),
+        },
+        {
+          value: 'business_claim',
+          label: tx(
+            'Klaim usaha & pengajuan mitra UMKM',
+            'Business claim & local SME partner application',
+          ),
+        },
       ]
     : [
-        { value: 'new_place', label: 'Usulkan tempat wisata / faskes / UMKM baru' },
-        { value: 'new_event', label: 'Usulkan agenda / event kota baru' },
+        {
+          value: 'new_place',
+          label: tx(
+            'Usulkan tempat wisata / faskes / UMKM baru',
+            'Suggest a new attraction / hospital / local SME',
+          ),
+        },
+        {
+          value: 'new_event',
+          label: tx(
+            'Usulkan agenda / event kota baru',
+            'Suggest a new cultural festival / city event',
+          ),
+        },
       ]
 
   async function submit(e: React.FormEvent<HTMLFormElement>) {
@@ -53,9 +85,19 @@ export function CommunityForm({
         }),
       })
       form.reset()
-      setStatus('Terima kasih. Kontribusi masuk antrean verifikasi admin.')
+      setStatus(
+        tx(
+          'Terima kasih. Kontribusi masuk antrean verifikasi admin.',
+          'Thank you. Your submission has entered the operator moderation queue.',
+        ),
+      )
     } catch {
-      setStatus('Kontribusi belum terkirim. Silakan coba lagi.')
+      setStatus(
+        tx(
+          'Kontribusi belum terkirim. Silakan coba lagi.',
+          'Submission could not be sent. Please try again.',
+        ),
+      )
     } finally {
       setBusy(false)
     }
@@ -68,18 +110,26 @@ export function CommunityForm({
           <div>
             <h2>{title}</h2>
             <p className="muted">
-              Bantu lengkapi data lokal atau klaim halaman bisnis Anda. Ditinjau oleh operator sebelum tampil.
+              {tx(
+                'Bantu lengkapi data lokal atau klaim halaman bisnis Anda. Ditinjau oleh operator sebelum tampil.',
+                'Help enrich local data or claim your business listing. Reviewed by operators before publishing.',
+              )}
             </p>
           </div>
-          <span className="pill">Buka Formulir ▾</span>
+          <span className="pill">
+            {tx('Buka Formulir ▾', 'Open Form ▾')}
+          </span>
         </summary>
         <div className="community-body">
           <p className="muted">
-            Perubahan ditinjau admin sebelum dipublikasikan. Jangan kirim kata sandi atau dokumen identitas melalui formulir ini.
+            {tx(
+              'Perubahan ditinjau admin sebelum dipublikasikan. Jangan kirim kata sandi atau dokumen identitas melalui formulir ini.',
+              'Submissions are verified by moderators before publication. Do not send passwords or sensitive ID documents.',
+            )}
           </p>
           <form onSubmit={submit} className="form-grid">
             <label>
-              Jenis kontribusi
+              {tx('Jenis kontribusi', 'Submission type')}
               <select name="type">
                 {options.map(opt => (
                   <option key={opt.value} value={opt.value}>
@@ -89,27 +139,33 @@ export function CommunityForm({
               </select>
             </label>
             <label>
-              Nama Pengirim / Pemilik Usaha
+              {tx('Nama Pengirim / Pemilik Usaha', 'Your Name / Business Owner')}
               <input
                 name="name"
                 required
                 maxLength={100}
                 autoComplete="name"
-                placeholder="Nama lengkap Anda"
+                placeholder={tx('Nama lengkap Anda', 'Your full name')}
               />
             </label>
             <label className="full-width">
-              Kontak (Email atau Nomor WhatsApp Aktif)
+              {tx(
+                'Kontak (Email atau Nomor WhatsApp Aktif)',
+                'Contact (Active Email or WhatsApp Number)',
+              )}
               <input
                 name="contact"
                 required
                 minLength={3}
                 maxLength={100}
-                placeholder="Contoh: 0812-xxxx-xxxx atau nama@email.com"
+                placeholder={tx(
+                  'Contoh: 0812-xxxx-xxxx atau nama@email.com',
+                  'e.g., +62 812-xxxx-xxxx or name@email.com',
+                )}
               />
             </label>
             <label className="full-width">
-              Informasi yang diajukan
+              {tx('Informasi yang diajukan', 'Details of your submission')}
               <textarea
                 name="message"
                 required
@@ -117,14 +173,22 @@ export function CommunityForm({
                 maxLength={3000}
                 placeholder={
                   placeId
-                    ? 'Tuliskan koreksi jam buka, harga tiket, nomor WhatsApp usaha, atau detail klaim mitra UMKM…'
-                    : 'Tuliskan nama tempat/agenda baru, alamat lengkap, jam buka, dan sumber informasi…'
+                    ? tx(
+                        'Tuliskan koreksi jam buka, harga tiket, nomor WhatsApp usaha, atau detail klaim mitra UMKM…',
+                        'Provide updated opening hours, ticket prices, WhatsApp contact, or business claim details…',
+                      )
+                    : tx(
+                        'Tuliskan nama tempat/agenda baru, alamat lengkap, jam buka, dan sumber informasi…',
+                        'Provide the new place or event name, full address, opening hours, and reference source…',
+                      )
                 }
               />
             </label>
             <div className="full-width">
               <button disabled={busy}>
-                {busy ? 'Mengirim…' : 'Kirim untuk ditinjau'}
+                {busy
+                  ? tx('Mengirim…', 'Submitting…')
+                  : tx('Kirim untuk ditinjau', 'Submit for review')}
               </button>
             </div>
           </form>

@@ -11,6 +11,7 @@ import {
   trackClick,
 } from '../lib/api'
 import { formatTicketRange, sanitizePhoneDigits } from '../lib/format'
+import { localizeCategoryName, localizeCityName, useI18n } from '../lib/i18n'
 import { getFallbackPlacesForCity } from '../lib/regions'
 import { DirectoryMap } from '../components/DirectoryMap'
 import { CommunityForm } from '../components/CommunityForm'
@@ -64,26 +65,40 @@ export const Route = createFileRoute('/kota/$citySlug/$categorySlug/$placeSlug')
 })
 
 function Detail() {
+  const { locale, tx } = useI18n()
   const d = Route.useLoaderData()
   const commercial = !['rumah-sakit', 'layanan-publik'].includes(d.category.slug)
   const sponsorLabel = sponsorBadgeLabel(d.place)
-  const ticketRange = formatTicketRange(
+  const ticketRangeRaw = formatTicketRange(
     d.place.ticket_price_min,
     d.place.ticket_price_max,
   )
+  const ticketRange =
+    locale === 'en' && ticketRangeRaw === 'Gratis' ? 'Free' : ticketRangeRaw
   const whatsappDigits = sanitizePhoneDigits(d.place.whatsapp)
   const phoneDigits = sanitizePhoneDigits(d.place.phone)
   const imageUrl = safeLink(d.place.image_url)
   const hotelUrl = safeLink(d.place.affiliate_hotel_url)
   const ticketUrl = safeLink(d.place.affiliate_ticket_url)
 
+  const displayCityName = localizeCityName(d.city.name, locale)
+  const displayCatName = localizeCategoryName(
+    d.category.slug,
+    d.category.name,
+    locale,
+  )
+
   return (
     <main id="main">
       <Breadcrumbs
         items={[
-          { label: d.city.name, to: '/kota/$citySlug', params: { citySlug: d.city.slug } },
           {
-            label: d.category.name,
+            label: displayCityName,
+            to: '/kota/$citySlug',
+            params: { citySlug: d.city.slug },
+          },
+          {
+            label: displayCatName,
             to: '/kota/$citySlug/$categorySlug',
             params: { citySlug: d.city.slug, categorySlug: d.category.slug },
           },
@@ -93,7 +108,7 @@ function Detail() {
 
       <div className="row" style={{ justifyContent: 'space-between' }}>
         <p className="eyebrow">
-          {d.city.name} / {d.category.name}
+          {displayCityName} / {displayCatName}
         </p>
         <Link
           to="/kota/$citySlug/$categorySlug"
@@ -101,20 +116,30 @@ function Detail() {
           search={{ radius: 25000, open24h: false, sort: 'distance', page: 1 }}
           className="pill"
         >
-          ← Kembali ke {d.category.name}
+          ← {tx('Kembali ke', 'Back to')} {displayCatName}
         </Link>
       </div>
 
       <div className="row" style={{ marginTop: '8px' }}>
         {sponsorLabel && <span className="badge">{sponsorLabel}</span>}
-        {d.place.is_verified && <span className="badge verified">Terverifikasi</span>}
+        {d.place.is_verified && (
+          <span className="badge verified">
+            ✓ {tx('Terverifikasi', 'Verified')}
+          </span>
+        )}
         {d.place.has_emergency && d.place.is_24_hours && (
-          <span className="badge emergency">IGD 24 Jam</span>
+          <span className="badge emergency">
+            🚨 {tx('IGD 24 Jam', '24H ER')}
+          </span>
         )}
       </div>
 
       <h1>{d.place.name}</h1>
-      <p className="muted">{d.place.address || 'Alamat mengikuti titik peta'}</p>
+      <p className="muted">
+        📍{' '}
+        {d.place.address ||
+          tx('Alamat mengikuti titik peta', 'Address follows map coordinates')}
+      </p>
 
       <div className="directory">
         <div>
@@ -125,24 +150,38 @@ function Detail() {
                 alt={d.place.name}
                 loading="lazy"
                 className="card-image"
+                style={{ height: '280px', marginBottom: '18px' }}
               />
             )}
-            <h2>Informasi tempat</h2>
-            <p>{d.place.description || 'Deskripsi belum tersedia.'}</p>
+            <h2>{tx('Informasi tempat', 'Place information')}</h2>
+            <p>
+              {d.place.description ||
+                tx('Deskripsi belum tersedia.', 'Description not yet available.')}
+            </p>
 
             <div className="grid section">
               <div className="submission-card">
-                <small className="muted">Jam Operasional</small>
+                <small className="muted">
+                  {tx('Jam Operasional', 'Operating Hours')}
+                </small>
                 <p style={{ margin: '4px 0 0', fontWeight: 600 }}>
                   {d.place.is_24_hours
-                    ? '🕒 Buka 24 jam'
-                    : d.place.opening_hours || 'Jam buka belum dikonfirmasi'}
+                    ? `🕒 ${tx('Buka 24 jam', 'Open 24 hours')}`
+                    : d.place.opening_hours ||
+                      tx(
+                        'Jam buka belum dikonfirmasi',
+                        'Opening hours unconfirmed',
+                      )}
                 </p>
               </div>
               <div className="submission-card">
-                <small className="muted">Tiket & Penilaian</small>
+                <small className="muted">
+                  {tx('Tiket & Penilaian', 'Ticket & Rating')}
+                </small>
                 <p className="mono" style={{ margin: '4px 0 0', fontWeight: 600 }}>
-                  {ticketRange ? `Tiket: ${ticketRange}` : 'Tiket: Belum ada info'}
+                  {ticketRange
+                    ? `${tx('Tiket', 'Ticket')}: ${ticketRange}`
+                    : tx('Tiket: Belum ada info', 'Ticket: No info yet')}
                   {d.place.rating_avg != null && d.place.rating_avg > 0
                     ? ` · ★ ${d.place.rating_avg.toFixed(1)}`
                     : ''}
@@ -157,7 +196,7 @@ function Detail() {
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                🗺️ Rute ke lokasi ↗
+                🗺️ {tx('Rute ke lokasi ↗', 'Get Directions ↗')}
               </a>
               {whatsappDigits && whatsappDigits.length >= 5 && (
                 <a
@@ -167,7 +206,7 @@ function Detail() {
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  💬 Hubungi via WhatsApp ↗
+                  💬 {tx('Hubungi via WhatsApp ↗', 'Contact via WhatsApp ↗')}
                 </a>
               )}
               {phoneDigits && phoneDigits.length >= 5 && (
@@ -176,14 +215,19 @@ function Detail() {
                   href={`tel:+${phoneDigits}`}
                   onClick={() => trackClick(d.city.id, d.place.id, 'phone_call')}
                 >
-                  📞 Telepon ({d.place.phone})
+                  📞 {tx('Telepon', 'Call')} ({d.place.phone})
                 </a>
               )}
             </div>
 
             {commercial && (hotelUrl || ticketUrl) && (
               <div className="submission-card">
-                <h3>Pemesanan Perjalanan & Tiket</h3>
+                <h3>
+                  {tx(
+                    'Pemesanan Perjalanan & Tiket',
+                    'Travel & Ticket Booking',
+                  )}
+                </h3>
                 <div className="row">
                   {hotelUrl && (
                     <p style={{ margin: 0 }}>
@@ -196,9 +240,12 @@ function Detail() {
                         target="_blank"
                         rel="sponsored noopener noreferrer"
                       >
-                        🏨 Cek hotel terdekat ↗
+                        🏨 {tx('Cek hotel terdekat ↗', 'Check nearby hotels ↗')}
                       </a>
-                      <small className="muted"> Tautan afiliasi</small>
+                      <small className="muted">
+                        {' '}
+                        {tx('Tautan afiliasi', 'Affiliate link')}
+                      </small>
                     </p>
                   )}
                   {ticketUrl && (
@@ -212,9 +259,12 @@ function Detail() {
                         target="_blank"
                         rel="sponsored noopener noreferrer"
                       >
-                        🎟️ Cek tiket wisata ↗
+                        🎟️ {tx('Cek tiket wisata ↗', 'Check attraction tickets ↗')}
                       </a>
-                      <small className="muted"> Tautan afiliasi</small>
+                      <small className="muted">
+                        {' '}
+                        {tx('Tautan afiliasi', 'Affiliate link')}
+                      </small>
                     </p>
                   )}
                 </div>

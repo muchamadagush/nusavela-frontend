@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { activeSponsor, type Place } from '../lib/api'
+import { useI18n } from '../lib/i18n'
 import { CATEGORY_MAP_COLORS, markerStyle } from '../lib/map-style'
 import 'leaflet/dist/leaflet.css'
 
@@ -12,6 +13,7 @@ export function DirectoryMap({
   center: [number, number]
   categorySlug?: string
 }) {
+  const { tx } = useI18n()
   const node = useRef<HTMLDivElement>(null)
   const [error, setError] = useState('')
   const tile = import.meta.env.VITE_MAP_TILE_URL as string | undefined
@@ -60,7 +62,14 @@ export function DirectoryMap({
           )
         }
       })
-      .catch(() => setError('Peta belum dapat dimuat. Daftar tempat tetap tersedia.'))
+      .catch(() =>
+        setError(
+          tx(
+            'Peta belum dapat dimuat. Daftar tempat tetap tersedia.',
+            'Map could not be loaded. The place directory remains available.',
+          ),
+        ),
+      )
     return () => {
       removed = true
       map?.remove()
@@ -70,23 +79,31 @@ export function DirectoryMap({
   const categoryInfo = CATEGORY_MAP_COLORS[categorySlug] || CATEGORY_MAP_COLORS.wisata
 
   return (
-    <aside className="map" aria-label="Peta tempat">
+    <aside className="map" aria-label={tx('Peta tempat', 'Places map')}>
       {tile && !error ? (
         <div ref={node} className="map-canvas" />
       ) : (
         <div className="panel">
-          <h2>Peta daerah</h2>
-          <p>{error || 'Peta tersedia setelah penyedia tile dikonfigurasi.'}</p>
+          <h2>{tx('Peta daerah', 'Regional map')}</h2>
+          <p>
+            {error ||
+              tx(
+                'Peta tersedia setelah penyedia tile dikonfigurasi.',
+                'Interactive map is available once the tile provider URL is configured.',
+              )}
+          </p>
           {martinTile && (
-            <p className="mono">Sumber MVT Martin siap: {martinTile}</p>
+            <p className="mono">
+              {tx('Sumber MVT Martin siap:', 'Martin MVT source ready:')} {martinTile}
+            </p>
           )}
-          <div className="row" aria-label="Legenda pin peta">
+          <div className="row" aria-label={tx('Legenda pin peta', 'Map pin legend')}>
             <span className="badge" style={{ borderColor: categoryInfo.color }}>
               ● {categoryInfo.label}
             </span>
             {commercialMap && (
               <span className="badge" style={{ borderColor: '#C89B3C' }}>
-                ★ Mitra Spotlight (#C89B3C)
+                ★ {tx('Mitra Spotlight (#C89B3C)', 'Spotlight Partner (#C89B3C)')}
               </span>
             )}
           </div>

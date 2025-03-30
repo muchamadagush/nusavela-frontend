@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { formatDateTimeId, formatRupiah } from '../lib/format'
+import { useI18n } from '../lib/i18n'
 
 export const eventSchema = z.object({
   id: z.string(),
@@ -18,32 +19,45 @@ export function EventsPanel({
   events: z.infer<typeof eventSchema>[] | null
   timezone?: string
 }) {
+  const { tx } = useI18n()
   return (
     <section className="panel events-panel">
-      <p className="eyebrow">KALENDER BUDAYA & FESTIVAL</p>
-      <h2>Agenda kota · 31 hari ke depan</h2>
+      <p className="eyebrow">
+        {tx('KALENDER BUDAYA & FESTIVAL', 'CULTURAL & FESTIVAL CALENDAR')}
+      </p>
+      <h2>{tx('Agenda kota · 31 hari ke depan', 'City events · Next 31 days')}</h2>
       {events === null ? (
         <p role="status" className="muted">
-          Agenda belum dapat dimuat.
+          {tx('Agenda belum dapat dimuat.', 'Events could not be loaded.')}
         </p>
       ) : !events.length ? (
-        <p className="muted">Belum ada agenda terkurasi.</p>
+        <p className="muted">
+          {tx('Belum ada agenda terkurasi.', 'No curated events scheduled yet.')}
+        </p>
       ) : (
         <ul className="events-list">
           {events.slice(0, 6).map(event => (
             <li key={event.id} className="event-item">
               <div className="row" style={{ justifyContent: 'space-between' }}>
-                <span className="badge verified">📅 Festival & Event</span>
-                {event.is_sponsored && <span className="badge">Sponsor</span>}
+                <span className="badge verified">
+                  📅 {tx('Festival & Event', 'Festival & Event')}
+                </span>
+                {event.is_sponsored && (
+                  <span className="badge">{tx('Sponsor', 'Sponsored')}</span>
+                )}
               </div>
               <h3>{event.title}</h3>
-              <p className="muted">📍 {event.venue_name || 'Lokasi belum dikonfirmasi'}</p>
+              <p className="muted">
+                📍 {event.venue_name || tx('Lokasi belum dikonfirmasi', 'Venue TBA')}
+              </p>
               <div className="row" style={{ justifyContent: 'space-between', marginTop: '8px' }}>
                 <time dateTime={event.start_datetime} className="mono muted">
                   🕒 {formatDateTimeId(event.start_datetime, timezone)}
                 </time>
                 <span className="mono badge">
-                  {event.ticket_price === 0 ? 'Gratis' : formatRupiah(event.ticket_price)}
+                  {event.ticket_price === 0
+                    ? tx('Gratis', 'Free')
+                    : formatRupiah(event.ticket_price)}
                 </span>
               </div>
             </li>

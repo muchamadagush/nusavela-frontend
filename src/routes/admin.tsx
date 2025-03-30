@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { z } from 'zod'
 import { api, seo } from '../lib/api'
 import { formatDateTimeId } from '../lib/format'
+import { useI18n } from '../lib/i18n'
 
 const userProfileSchema = z.object({
   id: z.string(),
@@ -58,6 +59,7 @@ export const Route = createFileRoute('/admin')({
 })
 
 function AdminPortal() {
+  const { tx } = useI18n()
   const [token, setToken] = useState('')
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(null)
   const [authMode, setAuthMode] = useState<'login' | 'setup'>('login')
@@ -341,7 +343,7 @@ function AdminPortal() {
       <main id="main">
         <div className="panel auth-card">
           <p className="eyebrow">PORTAL MANAJEMEN NUSAVELA</p>
-          <h1>{authMode === 'login' ? 'Masuk ke Panel Operator' : 'Setup Admin Pertama'}</h1>
+          <h1>{authMode === 'login' ? tx('Masuk ke Panel Operator', 'Sign In to Operator Portal') : 'Setup Admin Pertama'}</h1>
           <p className="muted">
             {authMode === 'login'
               ? 'Masuk menggunakan email atau username dan kata sandi akun operator Anda.'

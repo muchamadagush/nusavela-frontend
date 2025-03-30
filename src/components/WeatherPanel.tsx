@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { formatDateTimeId } from '../lib/format'
+import { useI18n } from '../lib/i18n'
 
 export const weatherSchema = z.object({
   temperature_c: z.number().finite(),
@@ -18,10 +19,13 @@ export function WeatherPanel({
   weather: z.infer<typeof weatherSchema> | null
   timezone?: string
 }) {
+  const { tx } = useI18n()
   return (
     <section className="panel weather-panel">
-      <p className="eyebrow">KONDISI ATMOSFER LOKAL</p>
-      <h2>Cuaca saat ini</h2>
+      <p className="eyebrow">
+        {tx('KONDISI ATMOSFER LOKAL', 'LOCAL ATMOSPHERIC CONDITIONS')}
+      </p>
+      <h2>{tx('Cuaca saat ini', 'Current weather')}</h2>
       {weather ? (
         <div className="weather-content">
           <div className="weather-temp-row">
@@ -32,7 +36,7 @@ export function WeatherPanel({
             </div>
           </div>
           <p className="muted weather-meta">
-            Pengamatan:{' '}
+            {tx('Pengamatan:', 'Observed:')}{' '}
             <time dateTime={new Date(weather.observed_at * 1000).toISOString()}>
               {formatDateTimeId(weather.observed_at, timezone)}
             </time>
@@ -43,12 +47,12 @@ export function WeatherPanel({
             target="_blank"
             className="weather-source"
           >
-            Sumber: OpenWeather ↗
+            {tx('Sumber: OpenWeather', 'Source: OpenWeather')} ↗
           </a>
         </div>
       ) : (
         <p role="status" className="muted">
-          Informasi cuaca belum tersedia.
+          {tx('Informasi cuaca belum tersedia.', 'Weather information unavailable.')}
         </p>
       )}
     </section>

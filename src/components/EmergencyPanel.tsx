@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { safeLink } from '../lib/api'
+import { useI18n } from '../lib/i18n'
 
 export const emergencySchema = z.object({
   id: z.number(),
@@ -17,6 +18,7 @@ export function EmergencyPanel({
 }: {
   contacts: EmergencyContact[] | null
 }) {
+  const { tx } = useI18n()
   const verified =
     contacts?.filter(contact => contact.is_active && safeLink(contact.source_url)) ??
     []
@@ -24,28 +26,49 @@ export function EmergencyPanel({
     <section className="sos section" aria-labelledby="emergency-heading">
       <div className="sos-header">
         <div>
-          <span className="sos-pill">🚨 SIAGA DARURAT NASIONAL & DAERAH</span>
-          <h2 id="emergency-heading">Kontak darurat terverifikasi</h2>
+          <span className="sos-pill">
+            🚨 {tx('SIAGA DARURAT NASIONAL & DAERAH', 'NATIONAL & REGIONAL EMERGENCY HOTLINES')}
+          </span>
+          <h2 id="emergency-heading">
+            {tx('Kontak darurat terverifikasi', 'Verified emergency contacts')}
+          </h2>
         </div>
-        <span className="mono sos-note">Ketuk nomor untuk panggilan langsung</span>
+        <span className="mono sos-note">
+          {tx('Ketuk nomor untuk panggilan langsung', 'Tap any number to call immediately')}
+        </span>
       </div>
       {contacts === null ? (
-        <p role="status">Kontak darurat belum dapat dimuat. Coba muat ulang halaman.</p>
+        <p role="status">
+          {tx(
+            'Kontak darurat belum dapat dimuat. Coba muat ulang halaman.',
+            'Emergency contacts could not be loaded. Please reload the page.',
+          )}
+        </p>
       ) : !verified.length ? (
-        <p>Belum ada kontak darurat terverifikasi untuk daerah ini.</p>
+        <p>
+          {tx(
+            'Belum ada kontak darurat terverifikasi untuk daerah ini.',
+            'No verified emergency contacts available for this area yet.',
+          )}
+        </p>
       ) : (
         <ul className="sos-grid">
           {verified.map(contact => (
             <li key={contact.id} className="sos-card">
               <div className="sos-card-info">
                 <strong>{contact.service_name}</strong>
-                {contact.is_24_hours && <span className="sos-24h"> · 24 jam</span>}
+                {contact.is_24_hours && (
+                  <span className="sos-24h">
+                    {' '}
+                    · {tx('24 jam', '24 hours')}
+                  </span>
+                )}
               </div>
               <div className="sos-card-actions">
                 <a
                   className="sos-call-btn"
                   href={`tel:${contact.phone_number.replace(/[ ()-]/g, '')}`}
-                  aria-label={`Hubungi ${contact.service_name}: ${contact.phone_number}`}
+                  aria-label={`${tx('Hubungi', 'Call')} ${contact.service_name}: ${contact.phone_number}`}
                 >
                   📞 {contact.phone_number}
                 </a>
@@ -55,7 +78,7 @@ export function EmergencyPanel({
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  Sumber verifikasi
+                  {tx('Sumber verifikasi', 'Verification source')}
                 </a>
               </div>
             </li>
