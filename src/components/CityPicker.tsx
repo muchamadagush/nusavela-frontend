@@ -1,9 +1,75 @@
-import { useId, useState } from 'react'
+import { useId, useMemo, useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
-import { api, citySchema, type City } from '../lib/api'
+import { nearestCity, type City } from '../lib/api'
+import { DEFAULT_CITIES } from '../lib/default-cities'
 import { formatTimezoneLabel } from '../lib/format'
 
+const ALIAS_MAP: Record<string, string[]> = {
+  jogja: ['yogyakarta', 'sleman', 'bantul', 'kulon progo', 'gunungkidul'],
+  yogya: ['yogyakarta', 'sleman', 'bantul'],
+  solo: ['surakarta', 'sukoharjo', 'karanganyar'],
+  bali: ['denpasar', 'badung', 'gianyar', 'tabanan', 'buleleng', 'klungkung', 'bangli', 'karangasem', 'jembrana'],
+  lombok: ['mataram', 'lombok barat', 'lombok tengah', 'lombok timur', 'lombok utara'],
+  labuanbajo: ['manggarai barat'],
+  'labuan bajo': ['manggarai barat'],
+  makasar: ['makassar'],
+  'ujung pandang': ['makassar'],
+  betawi: ['jakarta'],
+}
+
+function normalizeQuery(text: string): string {
+  return text
+    .toLocaleLowerCase('id')
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+export function matchCities(catalog: City[], rawQuery: string, limit = 25): City[] {
+  const q = normalizeQuery(rawQuery)
+  if (!q) {
+    return [...catalog]
+      .sort((a, b) => (a.tier ?? 2) - (b.tier ?? 2) || a.name.localeCompare(b.name, 'id'))
+      .slice(0, limit)
+  }
+
+  const expandedTerms = [q, ...(ALIAS_MAP[q] ?? [])]
+
+  const scored: Array<{ city: City; score: number }> = []
+  for (const c of catalog) {
+    const nameNorm = normalizeQuery(c.name)
+    const shortNorm = normalizeQuery(c.short_name ?? '')
+    const slugNorm = normalizeQuery(c.slug.replace(/-/g, ' '))
+
+    let bestScore = 0
+    for (const term of expandedTerms) {
+      if (shortNorm === term || nameNorm === term) {
+        bestScore = Math.max(bestScore, 100)
+      } else if (nameNorm === `kota ${term}`) {
+        bestScore = Math.max(bestScore, 98)
+      } else if (nameNorm === `kabupaten ${term}`) {
+        bestScore = Math.max(bestScore, 92)
+      } else if (shortNorm.startsWith(term) || nameNorm.startsWith(term)) {
+        bestScore = Math.max(bestScore, 85)
+      } else if (nameNorm.includes(term) || shortNorm.includes(term) || slugNorm.includes(term)) {
+        bestScore = Math.max(bestScore, 70)
+      }
+    }
+
+    if (bestScore > 0) {
+      if (c.tier === 1) bestScore += 5
+      scored.push({ city: c, score: bestScore })
+    }
+  }
+
+  return scored
+    .sort((a, b) => b.score - a.score || (a.city.tier ?? 2) - (b.city.tier ?? 2) || a.city.name.localeCompare(b.city.name, 'id'))
+    .slice(0, limit)
+    .map(item => item.city)
+}
+
 export function CityPicker({ cities }: { cities: City[] }) {
+  const catalog = cities.length > 0 ? cities : DEFAULT_CITIES
   const [q, setQ] = useState('')
   const [active, setActive] = useState(0)
   const [open, setOpen] = useState(false)
@@ -12,15 +78,10 @@ export function CityPicker({ cities }: { cities: City[] }) {
   const id = useId()
   const navigate = useNavigate()
 
-  const matches = cities
-    .filter(c =>
-      c.name.toLocaleLowerCase('id').includes(q.toLocaleLowerCase('id')) ||
-      (c.short_name && c.short_name.toLocaleLowerCase('id').includes(q.toLocaleLowerCase('id'))),
-    )
-    .slice(0, 25)
+  const matches = useMemo(() => matchCities(catalog, q, 25), [catalog, q])
 
-  const featured = cities.filter(c => c.tier === 1).slice(0, 8)
-  const quickCities = featured.length ? featured : cities.slice(0, 8)
+  const featured = useMemo(() => catalog.filter(c => c.tier === 1).slice(0, 8), [catalog])
+  const quickCities = featured.length ? featured : catalog.slice(0, 8)
 
   const choose = (c: City) => {
     setOpen(false)
@@ -37,12 +98,7 @@ export function CityPicker({ cities }: { cities: City[] }) {
     navigator.geolocation.getCurrentPosition(
       async ({ coords }) => {
         try {
-          choose(
-            await api(
-              `/cities/nearest?lat=${coords.latitude}&lng=${coords.longitude}`,
-              citySchema,
-            ),
-          )
+          choose(await nearestCity(coords.latitude, coords.longitude))
         } catch {
           setError('Kota terdekat belum dapat dimuat. Silakan pilih kota.')
         } finally {

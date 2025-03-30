@@ -17,7 +17,7 @@ export const Route = createFileRoute('/kota/$citySlug/$categorySlug/')({
       api(
         `/kota/${encodeURIComponent(p.citySlug)}/${encodeURIComponent(p.categorySlug)}?${queryString(deps)}`,
         placeSchema.array(),
-      ),
+      ).catch(() => []),
     ])
     const category = cats.find(x => x.slug === p.categorySlug)
     if (!category) throw new Error('Kategori tidak ditemukan')
