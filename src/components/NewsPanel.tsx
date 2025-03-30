@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { safeLink } from '../lib/api'
+import { useI18n } from '../lib/i18n'
 
 export const newsSchema = z.object({
   id: z.string(),
@@ -20,17 +21,22 @@ export function NewsPanel({
 }: {
   news: z.infer<typeof newsSchema>[] | null
 }) {
+  const { tx } = useI18n()
   const items = news?.filter(item => safeLink(item.source_url)).slice(0, 6) ?? []
   return (
     <section className="panel news-panel">
-      <p className="eyebrow"> JURNAL & KABAR TERKINI</p>
-      <h2>Berita daerah</h2>
+      <p className="eyebrow">
+        {tx('JURNAL & KABAR TERKINI', 'REGIONAL JOURNAL & HEADLINES')}
+      </p>
+      <h2>{tx('Berita daerah', 'Regional news')}</h2>
       {news === null ? (
         <p role="status" className="muted">
-          Berita belum dapat dimuat.
+          {tx('Berita belum dapat dimuat.', 'News could not be loaded.')}
         </p>
       ) : !items.length ? (
-        <p className="muted">Belum ada berita daerah.</p>
+        <p className="muted">
+          {tx('Belum ada berita daerah.', 'No regional news articles yet.')}
+        </p>
       ) : (
         <ul className="news-grid">
           {items.map(item => (

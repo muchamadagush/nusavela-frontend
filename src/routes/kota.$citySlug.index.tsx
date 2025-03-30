@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { api, categories, city, cacheHeaders, seo, placeSchema } from '../lib/api'
 import { formatTimezoneLabel } from '../lib/format'
+import { localizeCategoryName, localizeCityName, useI18n } from '../lib/i18n'
 import {
   CATEGORY_META,
   getCityRegion,
@@ -93,13 +94,15 @@ export const Route = createFileRoute('/kota/$citySlug/')({
 })
 
 function Dashboard() {
+  const { locale, tx } = useI18n()
   const d = Route.useLoaderData()
   const region = getCityRegion(d.city)
-  const province = getProvinceName(d.city)
+  const province = getProvinceName(d.city, locale)
+  const displayCityName = localizeCityName(d.city.name, locale)
 
   return (
     <main id="main">
-      <Breadcrumbs items={[{ label: d.city.name }]} />
+      <Breadcrumbs items={[{ label: displayCityName }]} />
 
       <section
         className="city-hero-banner"
@@ -107,21 +110,35 @@ function Dashboard() {
       >
         <div className="city-hero-top">
           <span className="hero-kicker">
-            {region.icon} KEPULAUAN {region.name.toUpperCase()} · PROVINSI {province.toUpperCase()}
+            {region.icon}{' '}
+            {locale === 'en'
+              ? `${region.nameEn.toUpperCase()} ARCHIPELAGO · ${province.toUpperCase()} PROVINCE`
+              : `KEPULAUAN ${region.name.toUpperCase()} · PROVINSI ${province.toUpperCase()}`}
           </span>
           <span className="badge mono">
-            Zona Waktu: {formatTimezoneLabel(d.city.timezone)}
+            {tx('Zona Waktu:', 'Time Zone:')} {formatTimezoneLabel(d.city.timezone)}
           </span>
         </div>
 
-        <h1>Menjelajahi {d.city.name}</h1>
+        <h1>
+          {tx('Menjelajahi', 'Exploring')} {displayCityName}
+        </h1>
         <p className="city-hero-lead">
-          Panduan terpadu destinasi wisata unggulan, kuliner daerah, simpul transportasi, prakiraan cuaca, hingga akses cepat fasilitas kesehatan & IGD 24 jam di {d.city.name}.
+          {locale === 'en'
+            ? `Integrated local guide to featured tourist attractions, regional culinary gems, transit hubs, live weather observations, and 24-hour emergency hospital care in ${displayCityName}.`
+            : `Panduan terpadu destinasi wisata unggulan, kuliner daerah, simpul transportasi, prakiraan cuaca, hingga akses cepat fasilitas kesehatan & IGD 24 jam di ${d.city.name}.`}
         </p>
 
         <div className="city-hero-meta mono">
-          <span>📍 Koordinat: {d.city.latitude.toFixed(4)}, {d.city.longitude.toFixed(4)}</span>
-          {d.city.tier === 1 && <span>✦ Kota Prioritas Nasional</span>}
+          <span>
+            📍 {tx('Koordinat:', 'Coordinates:')} {d.city.latitude.toFixed(4)},{' '}
+            {d.city.longitude.toFixed(4)}
+          </span>
+          {d.city.tier === 1 && (
+            <span>
+              ✦ {tx('Kota Prioritas Nasional', 'National Priority Destination')}
+            </span>
+          )}
         </div>
       </section>
 
@@ -132,8 +149,15 @@ function Dashboard() {
       <section className="section">
         <div className="section-heading-row">
           <div>
-            <p className="eyebrow">KATEGORI DIREKTORI KOTA</p>
-            <h2>Jelajahi Layanan & Destinasi di {d.city.name}</h2>
+            <p className="eyebrow">
+              {tx('KATEGORI DIREKTORI KOTA', 'CITY DIRECTORY CATEGORIES')}
+            </p>
+            <h2>
+              {tx(
+                `Jelajahi Layanan & Destinasi di ${d.city.name}`,
+                `Explore Services & Attractions in ${displayCityName}`,
+              )}
+            </h2>
           </div>
         </div>
         <div className="category-cards-grid">
@@ -149,12 +173,19 @@ function Dashboard() {
               >
                 <div className="row" style={{ justifyContent: 'space-between' }}>
                   <span className="category-card-icon">{meta.icon}</span>
-                  <span className="badge">{meta.badge}</span>
+                  <span className="badge">
+                    {locale === 'en' ? meta.badgeEn : meta.badge}
+                  </span>
                 </div>
-                <h3>{c.name}</h3>
-                <p className="muted">{meta.desc}</p>
+                <h3>{localizeCategoryName(c.slug, c.name, locale)}</h3>
+                <p className="muted">
+                  {locale === 'en' ? meta.descEn : meta.desc}
+                </p>
                 <span className="story-link-primary">
-                  Buka Direktori & Peta Interaktif →
+                  {tx(
+                    'Buka Direktori & Peta Interaktif →',
+                    'Open Directory & Interactive Map →',
+                  )}
                 </span>
               </Link>
             )
@@ -174,7 +205,10 @@ function Dashboard() {
 
       <CommunityForm
         cityId={d.city.id}
-        heading={`Usulkan tempat wisata, kuliner, atau agenda baru di ${d.city.name}`}
+        heading={tx(
+          `Usulkan tempat wisata, kuliner, atau agenda baru di ${d.city.name}`,
+          `Suggest a new attraction, culinary spot, or event in ${displayCityName}`,
+        )}
       />
     </main>
   )

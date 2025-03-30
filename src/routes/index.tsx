@@ -3,12 +3,14 @@ import { useMemo, useState } from 'react'
 import { cities, seo } from '../lib/api'
 import { DEFAULT_CITIES } from '../lib/default-cities'
 import { formatTimezoneLabel } from '../lib/format'
+import { localizeCityName, useI18n } from '../lib/i18n'
 import {
   ARCHIPELAGO_REGIONS,
   HERO_SPOTLIGHTS,
   HIDDEN_GEMS,
   POPULAR_RECOMMENDATIONS,
   PROVINCE_NAMES,
+  PROVINCE_NAMES_EN,
   getCityRegion,
   getProvinceCode,
   getProvinceName,
@@ -34,6 +36,7 @@ export const Route = createFileRoute('/')({
 })
 
 function Home() {
+  const { locale, tx } = useI18n()
   const data = Route.useLoaderData()
   const catalog = data.cities.length > 0 ? data.cities : DEFAULT_CITIES
 
@@ -44,6 +47,8 @@ function Home() {
   const [visibleCount, setVisibleCount] = useState(16)
 
   const activeSpotlight = HERO_SPOTLIGHTS[spotlightIndex] ?? HERO_SPOTLIGHTS[0]
+  const spotHighlights =
+    locale === 'en' ? activeSpotlight.highlightsEn : activeSpotlight.highlights
 
   const regionCounts = useMemo(() => {
     const counts: Record<string, number> = {}
@@ -63,9 +68,15 @@ function Home() {
       }
     }
     return Array.from(codes)
-      .map(code => ({ code, name: PROVINCE_NAMES[code] || `Provinsi ${code}` }))
+      .map(code => ({
+        code,
+        name:
+          locale === 'en'
+            ? PROVINCE_NAMES_EN[code] || PROVINCE_NAMES[code] || `Province ${code}`
+            : PROVINCE_NAMES[code] || `Provinsi ${code}`,
+      }))
       .sort((a, b) => a.name.localeCompare(b.name, 'id'))
-  }, [catalog, selectedRegion])
+  }, [catalog, selectedRegion, locale])
 
   const filteredDirectoryCities = useMemo(() => {
     const q = regionFilterQuery.trim().toLocaleLowerCase('id')
@@ -78,11 +89,15 @@ function Home() {
           return false
         }
         if (q) {
-          const prov = getProvinceName(c).toLocaleLowerCase('id')
+          const provId = getProvinceName(c, 'id').toLocaleLowerCase('id')
+          const provEn = getProvinceName(c, 'en').toLocaleLowerCase('id')
+          const nameEn = localizeCityName(c.name, 'en').toLocaleLowerCase('id')
           return (
             c.name.toLocaleLowerCase('id').includes(q) ||
+            nameEn.includes(q) ||
             (c.short_name && c.short_name.toLocaleLowerCase('id').includes(q)) ||
-            prov.includes(q)
+            provId.includes(q) ||
+            provEn.includes(q)
           )
         }
         return true
@@ -99,10 +114,47 @@ function Home() {
     setVisibleCount(16)
   }
 
+  const pillars =
+    locale === 'en'
+      ? [
+          [
+            '🧭 Curated Tourism & Gastronomy',
+            'Discover iconic landmarks, ticket price estimates, operating hours, authentic local cuisine, and instant route links.',
+          ],
+          [
+            '🏥 24-Hour Emergency & Hospital Care',
+            'Travel with peace of mind: 1-tap access to verified national emergency hotlines (112/119), referral hospitals, and 24H ERs.',
+          ],
+          [
+            '📰 Live Weather, News & Cultural Festivals',
+            'Monitor local atmospheric observations, curated regional headlines, and upcoming 31-day cultural festival calendars.',
+          ],
+        ]
+      : [
+          [
+            '🧭 Jelajah Wisata & Kuliner Terkurasi',
+            'Temukan destinasi unggulan, estimasi harga tiket, jam buka operasional, kuliner khas daerah, dan tautan rute langsung.',
+          ],
+          [
+            '🏥 Layanan Darurat & IGD 24 Jam',
+            'Standar keamanan wisatawan & warga: akses 1-ketuk ke nomor darurat nasional (112/119), rumah sakit rujukan, dan IGD 24 jam terdekat.',
+          ],
+          [
+            '📰 Cuaca, Kabar & Kalender Festival',
+            'Pantau pengamatan cuaca lokal terkini, berita daerah terkurasi, serta jadwal festival budaya 31 hari ke depan di tiap kota.',
+          ],
+        ]
+
   return (
     <main id="main">
       {/* 1. CINEMATIC WONDERFUL ARCHIPELAGO HERO SHOWCASE */}
-      <section className="hero-showcase" aria-label="Sorotan Destinasi Utama Nusantara">
+      <section
+        className="hero-showcase"
+        aria-label={tx(
+          'Sorotan Destinasi Utama Nusantara',
+          'Featured Indonesian Archipelago Destinations',
+        )}
+      >
         <div
           className="hero-backdrop"
           style={{ backgroundImage: `url(${activeSpotlight.imageUrl})` }}
@@ -111,20 +163,36 @@ function Home() {
 
         <div className="hero-inner">
           <div className="hero-top-pills">
-            <span className="hero-kicker">✦ WONDERFUL ARCHIPELAGO & PUBLIC UTILITY</span>
-            <span className="hero-region-pill">{activeSpotlight.badge}</span>
+            <span className="hero-kicker">
+              ✦{' '}
+              {tx(
+                'PESONA NUSANTARA & LAYANAN LOKAL TERPADU',
+                'WONDERFUL ARCHIPELAGO & PUBLIC UTILITY',
+              )}
+            </span>
+            <span className="hero-region-pill">
+              {locale === 'en' ? activeSpotlight.badgeEn : activeSpotlight.badge}
+            </span>
           </div>
 
           <h1>
-            {activeSpotlight.title}
+            {locale === 'en' ? activeSpotlight.titleEn : activeSpotlight.title}
             <br />
-            <em>{activeSpotlight.subtitle}</em>
+            <em>
+              {locale === 'en'
+                ? activeSpotlight.subtitleEn
+                : activeSpotlight.subtitle}
+            </em>
           </h1>
 
-          <p className="hero-lead">{activeSpotlight.description}</p>
+          <p className="hero-lead">
+            {locale === 'en'
+              ? activeSpotlight.descriptionEn
+              : activeSpotlight.description}
+          </p>
 
           <div className="hero-highlights">
-            {activeSpotlight.highlights.map(item => (
+            {spotHighlights.map(item => (
               <span key={item} className="hero-highlight-chip">
                 ✓ {item}
               </span>
@@ -137,7 +205,11 @@ function Home() {
               params={{ citySlug: activeSpotlight.citySlug }}
               className="button hero-cta-primary"
             >
-              🧭 Jelajahi {activeSpotlight.cityName} →
+              🧭 {tx('Jelajahi', 'Explore')}{' '}
+              {locale === 'en'
+                ? activeSpotlight.cityNameEn
+                : activeSpotlight.cityName}{' '}
+              →
             </Link>
             <Link
               to="/kota/$citySlug/$categorySlug"
@@ -148,11 +220,15 @@ function Home() {
               search={{ radius: 25000, open24h: false, sort: 'distance', page: 1 }}
               className="button hero-cta-secondary"
             >
-              🗺️ Lihat Peta & Destinasi
+              🗺️ {tx('Lihat Peta & Destinasi', 'View Map & Attractions')}
             </Link>
           </div>
 
-          <div className="hero-spotlight-tabs" role="tablist" aria-label="Pilih sorotan destinasi">
+          <div
+            className="hero-spotlight-tabs"
+            role="tablist"
+            aria-label={tx('Pilih sorotan destinasi', 'Select destination spotlight')}
+          >
             {HERO_SPOTLIGHTS.map((item, idx) => (
               <button
                 key={item.id}
@@ -162,8 +238,12 @@ function Home() {
                 className={`spotlight-tab ${spotlightIndex === idx ? 'active' : ''}`}
                 onClick={() => setSpotlightIndex(idx)}
               >
-                <span className="spotlight-tab-region">{item.region}</span>
-                <strong>{item.cityName}</strong>
+                <span className="spotlight-tab-region">
+                  {locale === 'en' ? item.regionEn : item.region}
+                </span>
+                <strong>
+                  {locale === 'en' ? item.cityNameEn : item.cityName}
+                </strong>
               </button>
             ))}
           </div>
@@ -177,7 +257,10 @@ function Home() {
 
       {data.unavailable && (
         <p role="status" className="panel section">
-          Daftar kota belum dapat dimuat dari server. Menampilkan katalog direktori lokal 514 kabupaten/kota Indonesia.
+          {tx(
+            'Daftar kota belum dapat dimuat dari server. Menampilkan katalog direktori lokal 514 kabupaten/kota Indonesia.',
+            'Daftar kota belum dapat dimuat dari server. Showing built-in directory of 514 Indonesian regencies and cities.',
+          )}
         </p>
       )}
 
@@ -185,11 +268,18 @@ function Home() {
       <section className="section">
         <div className="section-heading-row">
           <div>
-            <p className="eyebrow">DESTINASI WISATA INDONESIA</p>
-            <h2>Pesona Indonesia di Setiap Pulaunya</h2>
+            <p className="eyebrow">
+              {tx('DESTINASI WISATA INDONESIA', 'INDONESIAN ARCHIPELAGO REGIONS')}
+            </p>
+            <h2>
+              {tx(
+                'Pesona Indonesia di Setiap Pulaunya',
+                'The Enchantment of Indonesia Across Every Island',
+              )}
+            </h2>
           </div>
           <a href="#jelajah-kepulauan" className="pill">
-            Lihat Semua 514 Kab/Kota ↓
+            {tx('Lihat Semua 514 Kab/Kota ↓', 'Browse All 514 Cities ↓')}
           </a>
         </div>
 
@@ -205,12 +295,15 @@ function Home() {
               <div className="region-card-top">
                 <span className="region-card-icon">{region.icon}</span>
                 <span className="region-card-count mono">
-                  {regionCounts[region.id] ?? 0} Kab/Kota
+                  {regionCounts[region.id] ?? 0}{' '}
+                  {tx('Kab/Kota', 'Cities')}
                 </span>
               </div>
-              <h3>{region.name}</h3>
-              <p>{region.tagline}</p>
-              <span className="region-card-cta">Jelajahi Kepulauan →</span>
+              <h3>{locale === 'en' ? region.nameEn : region.name}</h3>
+              <p>{locale === 'en' ? region.taglineEn : region.tagline}</p>
+              <span className="region-card-cta">
+                {tx('Jelajahi Kepulauan →', 'Explore Island Region →')}
+              </span>
             </a>
           ))}
         </div>
@@ -220,10 +313,22 @@ function Home() {
       <section id="rekomendasi-populer" className="section">
         <div className="section-heading-row">
           <div>
-            <p className="eyebrow">REKOMENDASI WISATA POPULER</p>
-            <h2>Jelajahi Keindahan & Warisan Nusantara</h2>
+            <p className="eyebrow">
+              {tx('REKOMENDASI WISATA POPULER', 'POPULAR DESTINATION HIGHLIGHTS')}
+            </p>
+            <h2>
+              {tx(
+                'Jelajahi Keindahan & Warisan Nusantara',
+                'Explore the Beauty & Heritage of the Archipelago',
+              )}
+            </h2>
           </div>
-          <span className="mono muted">Kurasi Destinasi & Utilitas Kota</span>
+          <span className="mono muted">
+            {tx(
+              'Kurasi Destinasi & Utilitas Kota',
+              'Curated Attractions & Civic Utilities',
+            )}
+          </span>
         </div>
 
         <div className="story-cards-grid">
@@ -236,35 +341,41 @@ function Home() {
               >
                 <img
                   src={card.imageUrl}
-                  alt={card.title}
+                  alt={locale === 'en' ? card.titleEn : card.title}
                   loading="lazy"
                   className="story-card-img"
                 />
-                <span className="story-region-tag">{card.regionBadge}</span>
+                <span className="story-region-tag">
+                  {locale === 'en' ? card.regionBadgeEn : card.regionBadge}
+                </span>
               </Link>
               <div className="story-card-body">
                 <div className="row" style={{ justifyContent: 'space-between' }}>
                   <span className="mono muted" style={{ fontSize: '12px' }}>
-                    📍 {card.cityName}
+                    📍 {locale === 'en' ? card.cityNameEn : card.cityName}
                   </span>
-                  <span className="badge">{card.readTimeOrTag}</span>
+                  <span className="badge">
+                    {locale === 'en' ? card.readTimeOrTagEn : card.readTimeOrTag}
+                  </span>
                 </div>
                 <h3>
                   <Link
                     to="/kota/$citySlug"
                     params={{ citySlug: card.citySlug }}
                   >
-                    {card.title}
+                    {locale === 'en' ? card.titleEn : card.title}
                   </Link>
                 </h3>
-                <p className="muted">{card.summary}</p>
+                <p className="muted">
+                  {locale === 'en' ? card.summaryEn : card.summary}
+                </p>
                 <div className="story-card-footer">
                   <Link
                     to="/kota/$citySlug"
                     params={{ citySlug: card.citySlug }}
                     className="story-link-primary"
                   >
-                    Panduan Kota →
+                    {tx('Panduan Kota →', 'City Guide →')}
                   </Link>
                   <div className="row" style={{ gap: '6px' }}>
                     <Link
@@ -273,7 +384,7 @@ function Home() {
                       search={{ radius: 25000, open24h: false, sort: 'distance', page: 1 }}
                       className="chip"
                     >
-                      🧭 Wisata
+                      🧭 {tx('Wisata', 'Tourism')}
                     </Link>
                     <Link
                       to="/kota/$citySlug/$categorySlug"
@@ -281,7 +392,7 @@ function Home() {
                       search={{ radius: 25000, open24h: true, sort: 'distance', page: 1 }}
                       className="chip"
                     >
-                      🏥 IGD 24 Jam
+                      🏥 {tx('IGD 24 Jam', '24H ER')}
                     </Link>
                   </div>
                 </div>
@@ -295,10 +406,24 @@ function Home() {
       <section className="section">
         <div className="featured-experience-banner">
           <div className="featured-experience-content">
-            <span className="hero-kicker">✦ REKOMENDASI PENGALAMAN TERLENGKAP</span>
-            <h2>Taman Nasional Bunaken & Pesona Bahari Sulawesi</h2>
+            <span className="hero-kicker">
+              ✦{' '}
+              {tx(
+                'REKOMENDASI PENGALAMAN TERLENGKAP',
+                'COMPLETE ARCHIPELAGO EXPERIENCE',
+              )}
+            </span>
+            <h2>
+              {tx(
+                'Taman Nasional Bunaken & Pesona Bahari Sulawesi',
+                'Bunaken Marine National Park & Sulawesi Coastal Wonders',
+              )}
+            </h2>
             <p>
-              Mencari perjalanan dengan kombinasi penyelaman dinding karang tropis, wisata kuliner rempah pesisir Manado, serta kepastian layanan darurat & transportasi kota yang terverifikasi? Mulailah petualangan Anda dari gerbang Sulawesi Utara.
+              {tx(
+                'Mencari perjalanan dengan kombinasi penyelaman dinding karang tropis, wisata kuliner rempah pesisir Manado, serta kepastian layanan darurat & transportasi kota yang terverifikasi? Mulailah petualangan Anda dari gerbang Sulawesi Utara.',
+                'Looking for a journey combining tropical coral wall diving, Manado coastal spice cuisine, and verified 24-hour emergency & transit utilities? Start your adventure in North Sulawesi.',
+              )}
             </p>
             <div className="row" style={{ marginTop: '20px' }}>
               <Link
@@ -306,14 +431,18 @@ function Home() {
                 params={{ citySlug: 'kota-manado' }}
                 className="button hero-cta-primary"
               >
-                🌊 Lihat Panduan Kota Manado & Bunaken →
+                🌊{' '}
+                {tx(
+                  'Lihat Panduan Kota Manado & Bunaken →',
+                  'Explore Manado & Bunaken Guide →',
+                )}
               </Link>
               <Link
                 to="/kota/$citySlug"
                 params={{ citySlug: 'kabupaten-raja-ampat' }}
                 className="button hero-cta-secondary"
               >
-                🏝️ Jelajahi Raja Ampat
+                🏝️ {tx('Jelajahi Raja Ampat', 'Explore Raja Ampat')}
               </Link>
             </div>
           </div>
@@ -324,10 +453,19 @@ function Home() {
       <section id="hidden-gems" className="section">
         <div className="section-heading-row">
           <div>
-            <p className="eyebrow">REKOMENDASI WISATA TERBARU</p>
-            <h2>Hidden Gem & Lanskap Ikonik Indonesia</h2>
+            <p className="eyebrow">
+              {tx('REKOMENDASI WISATA TERBARU', 'CURATED ARCHIPELAGO GEMS')}
+            </p>
+            <h2>
+              {tx(
+                'Hidden Gem & Lanskap Ikonik Indonesia',
+                'Hidden Gems & Iconic Landscapes of Indonesia',
+              )}
+            </h2>
           </div>
-          <span className="mono muted">Eksplorasi Lintas Pulau</span>
+          <span className="mono muted">
+            {tx('Eksplorasi Lintas Pulau', 'Cross-Island Discovery')}
+          </span>
         </div>
 
         <div className="gems-grid">
@@ -340,16 +478,19 @@ function Home() {
             >
               <img
                 src={gem.imageUrl}
-                alt={gem.title}
+                alt={locale === 'en' ? gem.titleEn : gem.title}
                 loading="lazy"
                 className="gem-card-img"
               />
               <div className="gem-card-overlay">
-                <span className="story-region-tag">{gem.regionBadge}</span>
-                <h3>{gem.title}</h3>
-                <p>{gem.summary}</p>
+                <span className="story-region-tag">
+                  {locale === 'en' ? gem.regionBadgeEn : gem.regionBadge}
+                </span>
+                <h3>{locale === 'en' ? gem.titleEn : gem.title}</h3>
+                <p>{locale === 'en' ? gem.summaryEn : gem.summary}</p>
                 <span className="gem-card-cta">
-                  Buka Direktori {gem.cityName} →
+                  {tx('Buka Direktori', 'Open Directory')}{' '}
+                  {locale === 'en' ? gem.cityNameEn : gem.cityName} →
                 </span>
               </div>
             </Link>
@@ -357,22 +498,9 @@ function Home() {
         </div>
       </section>
 
-      {/* 7. 3 PILLARS OF NUSAVELA (TOURISM + EMERGENCY UTILITY + REGIONAL PULSE) */}
+      {/* 7. 3 PILLARS OF NUSAVELA */}
       <section className="section grid">
-        {[
-          [
-            '🧭 Jelajah Wisata & Kuliner Terkurasi',
-            'Temukan destinasi unggulan, estimasi harga tiket, jam buka operasional, kuliner khas daerah, dan tautan rute langsung.',
-          ],
-          [
-            '🏥 Layanan Darurat & IGD 24 Jam',
-            'Standar keamanan wisatawan & warga: akses 1-ketuk ke nomor darurat nasional (112/119), rumah sakit rujukan, dan IGD 24 jam terdekat.',
-          ],
-          [
-            '📰 Cuaca, Kabar & Kalender Festival',
-            'Pantau pengamatan cuaca lokal terkini, berita daerah terkurasi, serta jadwal festival budaya 31 hari ke depan di tiap kota.',
-          ],
-        ].map(([title, text]) => (
+        {pillars.map(([title, text]) => (
           <article key={title} className="panel">
             <h2>{title}</h2>
             <p className="muted">{text}</p>
@@ -384,15 +512,34 @@ function Home() {
       <section id="jelajah-kepulauan" className="section panel directory-explorer-panel">
         <div className="section-heading-row">
           <div>
-            <p className="eyebrow">DIREKTORI NASIONAL 38 PROVINSI</p>
-            <h2>Jelajahi 514 Kabupaten & Kota Berdasarkan Kepulauan</h2>
+            <p className="eyebrow">
+              {tx(
+                'DIREKTORI NASIONAL 38 PROVINSI',
+                'NATIONAL DIRECTORY OF 38 PROVINCES',
+              )}
+            </p>
+            <h2>
+              {tx(
+                'Jelajahi 514 Kabupaten & Kota Berdasarkan Kepulauan',
+                'Explore 514 Regencies & Cities by Archipelago Region',
+              )}
+            </h2>
           </div>
           <span className="badge verified mono">
-            Menampilkan {filteredDirectoryCities.length} dari {catalog.length} daerah
+            {locale === 'en'
+              ? `Showing ${filteredDirectoryCities.length} of ${catalog.length} areas`
+              : `Menampilkan ${filteredDirectoryCities.length} dari ${catalog.length} daerah`}
           </span>
         </div>
 
-        <div className="region-filter-tabs" role="tablist" aria-label="Filter berdasarkan kepulauan">
+        <div
+          className="region-filter-tabs"
+          role="tablist"
+          aria-label={tx(
+            'Filter berdasarkan kepulauan',
+            'Filter by island region',
+          )}
+        >
           <button
             type="button"
             role="tab"
@@ -400,7 +547,7 @@ function Home() {
             className={`pill ${selectedRegion === 'all' ? 'active' : ''}`}
             onClick={() => handleSelectRegion('all')}
           >
-            🌏 Semua Kepulauan ({catalog.length})
+            🌏 {tx('Semua Kepulauan', 'All Islands')} ({catalog.length})
           </button>
           {ARCHIPELAGO_REGIONS.map(r => (
             <button
@@ -411,14 +558,15 @@ function Home() {
               className={`pill ${selectedRegion === r.id ? 'active' : ''}`}
               onClick={() => handleSelectRegion(r.id)}
             >
-              {r.icon} {r.name} ({regionCounts[r.id] ?? 0})
+              {r.icon} {locale === 'en' ? r.nameEn : r.name} (
+              {regionCounts[r.id] ?? 0})
             </button>
           ))}
         </div>
 
         <div className="explorer-controls-row">
           <label className="explorer-control">
-            Filter Provinsi
+            {tx('Filter Provinsi', 'Filter by Province')}
             <select
               value={selectedProvince}
               onChange={e => {
@@ -426,7 +574,9 @@ function Home() {
                 setVisibleCount(16)
               }}
             >
-              <option value="all">Semua Provinsi ({availableProvinces.length})</option>
+              <option value="all">
+                {tx('Semua Provinsi', 'All Provinces')} ({availableProvinces.length})
+              </option>
               {availableProvinces.map(p => (
                 <option key={p.code} value={p.code}>
                   {p.name}
@@ -436,11 +586,14 @@ function Home() {
           </label>
 
           <label className="explorer-control explorer-search-control">
-            Filter Nama Kota / Kabupaten
+            {tx('Filter Nama Kota / Kabupaten', 'Filter by City / Regency Name')}
             <input
               type="search"
               value={regionFilterQuery}
-              placeholder="Ketik untuk menyaring daftar di bawah (misal: Bandung, Malang, Badung)…"
+              placeholder={tx(
+                'Ketik untuk menyaring daftar di bawah (misal: Bandung, Malang, Badung)…',
+                'Type to filter the list below (e.g., Bandung, Malang, Badung)…',
+              )}
               onChange={e => {
                 setRegionFilterQuery(e.target.value)
                 setVisibleCount(16)
@@ -452,7 +605,7 @@ function Home() {
         <div className="city-directory-grid">
           {filteredDirectoryCities.slice(0, visibleCount).map(c => {
             const region = getCityRegion(c)
-            const province = getProvinceName(c)
+            const province = getProvinceName(c, locale)
             return (
               <Link
                 key={c.id}
@@ -462,22 +615,28 @@ function Home() {
               >
                 <div className="row" style={{ justifyContent: 'space-between' }}>
                   {c.tier === 1 ? (
-                    <span className="badge">★ Destinasi Unggulan</span>
+                    <span className="badge">
+                      ★ {tx('Destinasi Unggulan', 'Featured City')}
+                    </span>
                   ) : (
                     <span className="muted mono" style={{ fontSize: '12px' }}>
-                      {region.icon} {region.shortName}
+                      {region.icon}{' '}
+                      {locale === 'en' ? region.shortNameEn : region.shortName}
                     </span>
                   )}
                   <span className="mono badge-tz">
                     {formatTimezoneLabel(c.timezone)}
                   </span>
                 </div>
-                <h3>{c.name}</h3>
+                <h3>{localizeCityName(c.name, locale)}</h3>
                 <p className="city-card-province">
-                  Provinsi {province}
+                  {tx('Provinsi', 'Province')} {province}
                 </p>
                 <p className="city-card-links">
-                  Wisata · RS & IGD · Kuliner · Transportasi →
+                  {tx(
+                    'Wisata · RS & IGD · Kuliner · Transportasi →',
+                    'Tourism · 24H ER · Culinary · Transit →',
+                  )}
                 </p>
               </Link>
             )
@@ -486,7 +645,10 @@ function Home() {
 
         {filteredDirectoryCities.length === 0 && (
           <p role="status" className="muted" style={{ textAlign: 'center', padding: '24px 0' }}>
-            Tidak ada kabupaten/kota yang cocok dengan filter tersebut.
+            {tx(
+              'Tidak ada kabupaten/kota yang cocok dengan filter tersebut.',
+              'No regencies or cities match the selected filters.',
+            )}
           </p>
         )}
 
@@ -497,7 +659,10 @@ function Home() {
               className="button button-outline"
               onClick={() => setVisibleCount(v => v + 24)}
             >
-              Tampilkan Lebih Banyak Daerah ({filteredDirectoryCities.length - visibleCount} tersisa) ↓
+              {tx(
+                `Tampilkan Lebih Banyak Daerah (${filteredDirectoryCities.length - visibleCount} tersisa) ↓`,
+                `Show More Cities (${filteredDirectoryCities.length - visibleCount} remaining) ↓`,
+              )}
             </button>
           </div>
         )}

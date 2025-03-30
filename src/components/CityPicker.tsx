@@ -3,6 +3,7 @@ import { useNavigate } from '@tanstack/react-router'
 import { nearestCity, type City } from '../lib/api'
 import { DEFAULT_CITIES } from '../lib/default-cities'
 import { formatTimezoneLabel } from '../lib/format'
+import { localizeCityName, useI18n } from '../lib/i18n'
 import { getCityRegion, getProvinceName } from '../lib/regions'
 
 const ALIAS_MAP: Record<string, string[]> = {
@@ -15,11 +16,23 @@ const ALIAS_MAP: Record<string, string[]> = {
   'labuan bajo': ['manggarai barat'],
   komodo: ['manggarai barat'],
   bromo: ['malang', 'probolinggo', 'pasuruan', 'lumajang'],
-  toba: ['samosir', 'toba', 'apanuli utara', 'simelungun'],
+  toba: ['samosir', 'toba', 'tapanuli utara', 'simalungun'],
+  'lake toba': ['samosir', 'toba'],
   bunaken: ['manado'],
   makasar: ['makassar'],
   'ujung pandang': ['makassar'],
   betawi: ['jakarta'],
+  'west java': ['jawa barat'],
+  'central java': ['jawa tengah'],
+  'east java': ['jawa timur'],
+  'north sumatra': ['sumatera utara'],
+  'west sumatra': ['sumatera barat'],
+  'south sumatra': ['sumatera selatan'],
+  'north sulawesi': ['sulawesi utara'],
+  'south sulawesi': ['sulawesi selatan'],
+  'west papua': ['papua barat', 'raja ampat'],
+  borneo: ['kalimantan'],
+  celebes: ['sulawesi'],
 }
 
 function normalizeQuery(text: string): string {
@@ -43,24 +56,32 @@ export function matchCities(catalog: City[], rawQuery: string, limit = 25): City
   const scored: Array<{ city: City; score: number }> = []
   for (const c of catalog) {
     const nameNorm = normalizeQuery(c.name)
+    const nameEnNorm = normalizeQuery(localizeCityName(c.name, 'en'))
     const shortNorm = normalizeQuery(c.short_name ?? '')
     const slugNorm = normalizeQuery(c.slug.replace(/-/g, ' '))
-    const provNorm = normalizeQuery(getProvinceName(c))
-    const regionNorm = normalizeQuery(getCityRegion(c).name)
+    const provNorm = normalizeQuery(getProvinceName(c, 'id'))
+    const provEnNorm = normalizeQuery(getProvinceName(c, 'en'))
+    const region = getCityRegion(c)
+    const regionNorm = normalizeQuery(`${region.name} ${region.nameEn}`)
 
     let bestScore = 0
     for (const term of expandedTerms) {
-      if (shortNorm === term || nameNorm === term) {
+      if (shortNorm === term || nameNorm === term || nameEnNorm === term) {
         bestScore = Math.max(bestScore, 100)
-      } else if (nameNorm === `kota ${term}`) {
+      } else if (nameNorm === `kota ${term}` || nameEnNorm === `${term} city`) {
         bestScore = Math.max(bestScore, 98)
-      } else if (nameNorm === `kabupaten ${term}`) {
+      } else if (nameNorm === `kabupaten ${term}` || nameEnNorm === `${term} regency`) {
         bestScore = Math.max(bestScore, 92)
-      } else if (shortNorm.startsWith(term) || nameNorm.startsWith(term)) {
+      } else if (shortNorm.startsWith(term) || nameNorm.startsWith(term) || nameEnNorm.startsWith(term)) {
         bestScore = Math.max(bestScore, 86)
-      } else if (nameNorm.includes(term) || shortNorm.includes(term) || slugNorm.includes(term)) {
+      } else if (
+        nameNorm.includes(term) ||
+        nameEnNorm.includes(term) ||
+        shortNorm.includes(term) ||
+        slugNorm.includes(term)
+      ) {
         bestScore = Math.max(bestScore, 74)
-      } else if (provNorm.includes(term) || regionNorm.includes(term)) {
+      } else if (provNorm.includes(term) || provEnNorm.includes(term) || regionNorm.includes(term)) {
         bestScore = Math.max(bestScore, 60)
       }
     }
@@ -83,6 +104,7 @@ export function matchCities(catalog: City[], rawQuery: string, limit = 25): City
 }
 
 export function CityPicker({ cities }: { cities: City[] }) {
+  const { locale, tx } = useI18n()
   const catalog = cities.length > 0 ? cities : DEFAULT_CITIES
   const [q, setQ] = useState('')
   const [active, setActive] = useState(0)
@@ -104,7 +126,12 @@ export function CityPicker({ cities }: { cities: City[] }) {
 
   function gps() {
     if (!navigator.geolocation) {
-      setError('Browser ini tidak mendukung deteksi lokasi. Silakan pilih kota.')
+      setError(
+        tx(
+          'Browser ini tidak mendukung deteksi lokasi. Silakan pilih kota.',
+          'This browser does not support geolocation. Please select a city manually.',
+        ),
+      )
       return
     }
     setBusy(true)
@@ -114,31 +141,60 @@ export function CityPicker({ cities }: { cities: City[] }) {
         try {
           choose(await nearestCity(coords.latitude, coords.longitude))
         } catch {
-          setError('Kota terdekat belum dapat dimuat. Silakan pilih kota.')
+          setError(
+            tx(
+              'Kota terdekat belum dapat dimuat. Silakan pilih kota.',
+              'Nearest city could not be loaded. Please select a city.',
+            ),
+          )
         } finally {
           setBusy(false)
         }
       },
       () => {
         setBusy(false)
-        setError('Lokasi tidak tersedia atau izin ditolak. Silakan pilih kota.')
+        setError(
+          tx(
+            'Lokasi tidak tersedia atau izin ditolak. Silakan pilih kota.',
+            'Location unavailable or permission denied. Please select a city.',
+          ),
+        )
       },
       { timeout: 10000, maximumAge: 300000 },
     )
   }
 
   return (
-    <section className="panel city-picker-panel" aria-label="Pencarian destinasi kabupaten dan kota">
+    <section
+      className="panel city-picker-panel"
+      aria-label={tx(
+        'Pencarian destinasi kabupaten dan kota',
+        'Search Indonesian regencies and cities',
+      )}
+    >
       <div className="picker-header-row">
         <div>
           <label htmlFor={id} className="picker-label">
-            Kota atau pulau mana yang ingin Anda jelajahi hari ini?
+            {tx(
+              'Kota mana yang ingin Anda jelajahi?',
+              'Which Indonesian city or island would you like to explore?',
+            )}
           </label>
           <p className="picker-sublabel">
-            Cari langsung dari <strong>{catalog.length} kabupaten/kota</strong> di 38 provinsi (coba ketik: <em>Bandung</em>, <em>Bali</em>, <em>Yogyakarta</em>, <em>Labuan Bajo</em>, atau <em>Raja Ampat</em>)
+            {locale === 'en' ? (
+              <>
+                Search across <strong>{catalog.length} regencies & cities</strong> in 38 provinces (try: <em>Bandung</em>, <em>Bali</em>, <em>Yogyakarta</em>, <em>Labuan Bajo</em>, or <em>Raja Ampat</em>)
+              </>
+            ) : (
+              <>
+                Cari langsung dari <strong>{catalog.length} kabupaten/kota</strong> di 38 provinsi (coba ketik: <em>Bandung</em>, <em>Bali</em>, <em>Yogyakarta</em>, <em>Labuan Bajo</em>, atau <em>Raja Ampat</em>)
+              </>
+            )}
           </p>
         </div>
-        <span className="badge verified mono">38 Provinsi · 514 Daerah</span>
+        <span className="badge verified mono">
+          {tx('38 Provinsi · 514 Daerah', '38 Provinces · 514 Cities')}
+        </span>
       </div>
 
       <div className="picker-bar">
@@ -154,7 +210,10 @@ export function CityPicker({ cities }: { cities: City[] }) {
               open && matches[active] ? `${id}-${active}` : undefined
             }
             value={q}
-            placeholder="Ketik nama kota, kabupaten, provinsi, atau destinasi (misal: Bandung, Bali, Jogja)…"
+            placeholder={tx(
+              'Ketik nama kota, kabupaten, provinsi, atau destinasi (misal: Bandung, Bali, Jogja)…',
+              'Type a city, regency, province, or destination (e.g., Bandung, Bali, Yogyakarta)…',
+            )}
             onFocus={() => setOpen(true)}
             onChange={e => {
               setQ(e.target.value)
@@ -182,7 +241,7 @@ export function CityPicker({ cities }: { cities: City[] }) {
             <button
               type="button"
               className="clear-btn"
-              aria-label="Bersihkan pencarian"
+              aria-label={tx('Bersihkan pencarian', 'Clear search')}
               onClick={() => {
                 setQ('')
                 setActive(0)
@@ -193,7 +252,9 @@ export function CityPicker({ cities }: { cities: City[] }) {
           )}
         </div>
         <button type="button" onClick={gps} disabled={busy} className="gps-btn">
-          {busy ? 'Mencari lokasi…' : '📍 Gunakan lokasi saya'}
+          {busy
+            ? tx('Mencari lokasi…', 'Locating…')
+            : tx('📍 Gunakan lokasi saya', '📍 Use my location')}
         </button>
       </div>
 
@@ -201,7 +262,7 @@ export function CityPicker({ cities }: { cities: City[] }) {
         <ul role="listbox" id={`${id}-list`} className="listbox">
           {matches.map((c, i) => {
             const region = getCityRegion(c)
-            const province = getProvinceName(c)
+            const province = getProvinceName(c, locale)
             return (
               <li
                 key={c.id}
@@ -211,13 +272,20 @@ export function CityPicker({ cities }: { cities: City[] }) {
               >
                 <button type="button" onClick={() => choose(c)}>
                   <div className="listbox-city-main">
-                    <strong>{c.name}</strong>
+                    <strong>{localizeCityName(c.name, locale)}</strong>
                     <span className="listbox-city-meta">
-                      {region.icon} {province} · Kepulauan {region.shortName}
+                      {region.icon} {province} ·{' '}
+                      {locale === 'en'
+                        ? `${region.shortNameEn} Archipelago`
+                        : `Kepulauan ${region.shortName}`}
                     </span>
                   </div>
                   <span className="row">
-                    {c.tier === 1 && <span className="badge">Destinasi Unggulan</span>}
+                    {c.tier === 1 && (
+                      <span className="badge">
+                        {tx('Destinasi Unggulan', 'Featured')}
+                      </span>
+                    )}
                     {c.timezone && (
                       <small className="mono badge-tz">
                         {formatTimezoneLabel(c.timezone)}
@@ -230,12 +298,18 @@ export function CityPicker({ cities }: { cities: City[] }) {
           })}
         </ul>
       )}
-      {open && !matches.length && <p role="status">Kota tidak ditemukan.</p>}
+      {open && !matches.length && (
+        <p role="status">
+          {tx('Kota tidak ditemukan.', 'No matching city found.')}
+        </p>
+      )}
       {error && <p role="alert" className="error">{error}</p>}
 
       {quickCities.length > 0 && (
         <div className="quick-cities">
-          <span className="muted">✨ Populer dijelajahi:</span>
+          <span className="muted">
+            {tx('✨ Populer dijelajahi:', '✨ Popular destinations:')}
+          </span>
           {quickCities.map(c => (
             <button
               key={c.id}
@@ -243,14 +317,17 @@ export function CityPicker({ cities }: { cities: City[] }) {
               className="chip"
               onClick={() => choose(c)}
             >
-              {getCityRegion(c).icon} {c.short_name || c.name}
+              {getCityRegion(c).icon} {c.short_name || localizeCityName(c.name, locale)}
             </button>
           ))}
         </div>
       )}
 
       <p className="muted picker-hint">
-        Lokasi digunakan setelah Anda menekan tombol. Anda juga dapat memilih kota secara manual.
+        {tx(
+          'Lokasi digunakan setelah Anda menekan tombol. Anda juga dapat memilih kota secara manual.',
+          'Your location is only accessed when you press the button. You can also select any city manually.',
+        )}
       </p>
     </section>
   )

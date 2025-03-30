@@ -1,6 +1,7 @@
 import { Link } from '@tanstack/react-router'
 import { activeSponsor, safeLink, sponsorBadgeLabel, type Place } from '../lib/api'
 import { formatTicketRange } from '../lib/format'
+import { useI18n } from '../lib/i18n'
 import { CATEGORY_META } from '../lib/regions'
 
 export function PlaceCard({
@@ -12,8 +13,11 @@ export function PlaceCard({
   citySlug: string
   categorySlug: string
 }) {
+  const { locale, tx } = useI18n()
   const badge = sponsorBadgeLabel(p)
-  const ticket = formatTicketRange(p.ticket_price_min, p.ticket_price_max)
+  const ticketRaw = formatTicketRange(p.ticket_price_min, p.ticket_price_max)
+  const ticket =
+    locale === 'en' && ticketRaw === 'Gratis' ? 'Free' : ticketRaw
   const imageUrl = safeLink(p.image_url)
   const catMeta = CATEGORY_META[categorySlug] ?? CATEGORY_META.wisata
 
@@ -29,22 +33,34 @@ export function PlaceCard({
           />
           <div className="place-card-overlay-badges">
             {badge && <span className="badge">{badge}</span>}
-            {p.is_verified && <span className="badge verified">✓ Terverifikasi</span>}
+            {p.is_verified && (
+              <span className="badge verified">
+                ✓ {tx('Terverifikasi', 'Verified')}
+              </span>
+            )}
             {p.has_emergency && p.is_24_hours && (
-              <span className="badge emergency">🚨 IGD 24 Jam</span>
+              <span className="badge emergency">
+                🚨 {tx('IGD 24 Jam', '24H ER')}
+              </span>
             )}
           </div>
         </div>
       ) : (
         <div className="place-card-top-badges">
           <span className="place-cat-pill">
-            {catMeta.icon} {catMeta.badge}
+            {catMeta.icon} {locale === 'en' ? catMeta.badgeEn : catMeta.badge}
           </span>
           <div className="row">
             {badge && <span className="badge">{badge}</span>}
-            {p.is_verified && <span className="badge verified">✓ Terverifikasi</span>}
+            {p.is_verified && (
+              <span className="badge verified">
+                ✓ {tx('Terverifikasi', 'Verified')}
+              </span>
+            )}
             {p.has_emergency && p.is_24_hours && (
-              <span className="badge emergency">🚨 IGD 24 Jam</span>
+              <span className="badge emergency">
+                🚨 {tx('IGD 24 Jam', '24H ER')}
+              </span>
             )}
           </div>
         </div>
@@ -60,15 +76,22 @@ export function PlaceCard({
           </Link>
         </h3>
         <p className="muted place-address">
-          📍 {p.address || 'Alamat mengikuti titik koordinat peta'}
+          📍{' '}
+          {p.address ||
+            tx(
+              'Alamat mengikuti titik koordinat peta',
+              'Address follows map coordinates',
+            )}
         </p>
-        {p.description && (
-          <p className="place-excerpt">{p.description}</p>
-        )}
+        {p.description && <p className="place-excerpt">{p.description}</p>}
 
         <div className="place-meta-chips">
           <span className="meta-chip">
-            🕒 {p.is_24_hours ? 'Buka 24 jam' : p.opening_hours || 'Jam buka belum dikonfirmasi'}
+            🕒{' '}
+            {p.is_24_hours
+              ? tx('Buka 24 jam', 'Open 24 hours')
+              : p.opening_hours ||
+                tx('Jam buka belum dikonfirmasi', 'Opening hours unconfirmed')}
           </span>
           {p.distance_meters != null && (
             <span className="meta-chip mono">
@@ -82,7 +105,7 @@ export function PlaceCard({
           )}
           {ticket && (
             <span className="meta-chip mono">
-              🎟️ Tiket: {ticket}
+              🎟️ {tx('Tiket', 'Ticket')}: {ticket}
             </span>
           )}
         </div>
@@ -93,7 +116,7 @@ export function PlaceCard({
             params={{ citySlug, categorySlug, placeSlug: p.slug }}
             className="button button-sm"
           >
-            Lihat Detail →
+            {tx('Lihat Detail →', 'View Details →')}
           </Link>
           <a
             href={`https://www.google.com/maps/dir/?api=1&destination=${p.latitude},${p.longitude}`}
@@ -101,7 +124,7 @@ export function PlaceCard({
             rel="noopener noreferrer"
             className="button button-outline button-sm"
           >
-            Rute ke lokasi ↗
+            {tx('Rute ke lokasi ↗', 'Get Directions ↗')}
           </a>
         </div>
       </div>

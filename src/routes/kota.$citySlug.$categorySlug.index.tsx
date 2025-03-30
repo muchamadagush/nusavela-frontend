@@ -1,5 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { api, categories, city, cacheHeaders, placeSchema, seo } from '../lib/api'
+import { localizeCategoryName, localizeCityName, useI18n } from '../lib/i18n'
 import { directorySearch, queryString } from '../lib/search'
 import { getFallbackPlacesForCity } from '../lib/regions'
 import { DirectoryMap } from '../components/DirectoryMap'
@@ -22,7 +23,8 @@ export const Route = createFileRoute('/kota/$citySlug/$categorySlug/')({
     ])
     const category = cats.find(x => x.slug === p.categorySlug)
     if (!category) throw new Error('Kategori tidak ditemukan')
-    const finalPlaces = places.length > 0 ? places : getFallbackPlacesForCity(c, p.categorySlug)
+    const finalPlaces =
+      places.length > 0 ? places : getFallbackPlacesForCity(c, p.categorySlug)
     return { city: c, categories: cats, category, places: finalPlaces }
   },
   headers: cacheHeaders,
@@ -39,6 +41,7 @@ export const Route = createFileRoute('/kota/$citySlug/$categorySlug/')({
 })
 
 function Directory() {
+  const { locale, tx } = useI18n()
   const d = Route.useLoaderData()
   const search = Route.useSearch()
   const navigate = Route.useNavigate()
@@ -48,9 +51,21 @@ function Directory() {
   const [gpsBusy, setGpsBusy] = useState(false)
   const isMedical = d.category.slug === 'rumah-sakit'
 
+  const displayCityName = localizeCityName(d.city.name, locale)
+  const displayCatName = localizeCategoryName(
+    d.category.slug,
+    d.category.name,
+    locale,
+  )
+
   function applyGpsFilter() {
     if (!navigator.geolocation) {
-      setFilterError('Browser ini tidak mendukung deteksi lokasi GPS.')
+      setFilterError(
+        tx(
+          'Browser ini tidak mendukung deteksi lokasi GPS.',
+          'This browser does not support GPS geolocation.',
+        ),
+      )
       return
     }
     setGpsBusy(true)
@@ -69,7 +84,12 @@ function Directory() {
       },
       () => {
         setGpsBusy(false)
-        setFilterError('Lokasi GPS tidak tersedia atau izin ditolak.')
+        setFilterError(
+          tx(
+            'Lokasi GPS tidak tersedia atau izin ditolak.',
+            'GPS location unavailable or permission denied.',
+          ),
+        )
       },
       { timeout: 10000, maximumAge: 300000 },
     )
@@ -86,12 +106,18 @@ function Directory() {
     <main id="main">
       <Breadcrumbs
         items={[
-          { label: d.city.name, to: '/kota/$citySlug', params: { citySlug: d.city.slug } },
-          { label: d.category.name },
+          {
+            label: displayCityName,
+            to: '/kota/$citySlug',
+            params: { citySlug: d.city.slug },
+          },
+          { label: displayCatName },
         ]}
       />
       <h1>
-        {d.category.name} di {d.city.name}
+        {locale === 'en'
+          ? `${displayCatName} in ${displayCityName}`
+          : `${d.category.name} di ${d.city.name}`}
       </h1>
       <CategoryPills
         citySlug={d.city.slug}
@@ -129,11 +155,13 @@ function Directory() {
             onClick={applyGpsFilter}
             disabled={gpsBusy}
           >
-            {gpsBusy ? 'Mencari GPS…' : '📍 Urutkan dari Lokasi Saya'}
+            {gpsBusy
+              ? tx('Mencari GPS…', 'Locating GPS…')
+              : tx('📍 Urutkan dari Lokasi Saya', '📍 Sort by My Location')}
           </button>
 
           <label>
-            Radius Pencarian
+            {tx('Radius Pencarian (m)', 'Search Radius (m)')}
             <input
               name="radius"
               type="number"
@@ -146,16 +174,20 @@ function Directory() {
           </label>
 
           <label>
-            Urutkan Berdasarkan
+            {tx('Urutkan Berdasarkan', 'Sort By')}
             <select name="sort" defaultValue={search.sort}>
-              <option value="distance">Jarak Terdekat</option>
-              <option value="rating">Rating Tertinggi</option>
+              <option value="distance">
+                {tx('Jarak Terdekat', 'Nearest Distance')}
+              </option>
+              <option value="rating">
+                {tx('Rating Tertinggi', 'Highest Rating')}
+              </option>
             </select>
           </label>
 
           <label className="row">
             <input name="open24h" type="checkbox" defaultChecked={search.open24h} />
-            🕒 Buka 24 jam
+            🕒 {tx('Buka 24 jam', 'Open 24 hours')}
           </label>
 
           {isMedical && (
@@ -165,11 +197,13 @@ function Directory() {
                 type="checkbox"
                 defaultChecked={Boolean(search.emergencyOnly)}
               />
-              🚑 Khusus IGD 24 jam
+              🚑 {tx('Khusus IGD 24 jam', '24H Emergency Room Only')}
             </label>
           )}
 
-          <button type="submit">Terapkan filter</button>
+          <button type="submit">
+            {tx('Terapkan filter', 'Apply filters')}
+          </button>
 
           {hasCustomFilter && (
             <button
@@ -181,12 +215,17 @@ function Directory() {
                 })
               }
             >
-              Reset Filter
+              {tx('Reset Filter', 'Reset Filters')}
             </button>
           )}
 
           <details className="coords-details" open={search.lat !== undefined}>
-            <summary>Pengaturan koordinat manual (opsional)</summary>
+            <summary>
+              {tx(
+                'Pengaturan koordinat manual (opsional)',
+                'Manual coordinate settings (optional)',
+              )}
+            </summary>
             <div className="row" style={{ marginTop: '10px' }}>
               <label>
                 Latitude
@@ -227,7 +266,10 @@ function Directory() {
         <div className="directory-list" ref={list}>
           <button
             className="sheet-grip"
-            aria-label="Geser tinggi daftar tempat"
+            aria-label={tx(
+              'Geser tinggi daftar tempat',
+              'Resize directory list height',
+            )}
             onPointerDown={e => {
               drag.current = e.clientY
               e.currentTarget.setPointerCapture(e.pointerId)
@@ -253,7 +295,14 @@ function Directory() {
               drag.current = null
             }}
           />
-          {!d.places.length && <p role="status">Belum ada tempat untuk filter ini.</p>}
+          {!d.places.length && (
+            <p role="status">
+              {tx(
+                'Belum ada tempat untuk filter ini.',
+                'No places found for the selected filters.',
+              )}
+            </p>
+          )}
           {d.places.map(p => (
             <PlaceCard
               key={p.id}
@@ -268,15 +317,17 @@ function Directory() {
               disabled={search.page === 1}
               onClick={() => navigate({ search: { ...search, page: search.page - 1 } })}
             >
-              ← Sebelumnya
+              ← {tx('Sebelumnya', 'Previous')}
             </button>
-            <span className="mono">Halaman {search.page}</span>
+            <span className="mono">
+              {tx('Halaman', 'Page')} {search.page}
+            </span>
             <button
               className="button-outline"
               disabled={d.places.length < 60}
               onClick={() => navigate({ search: { ...search, page: search.page + 1 } })}
             >
-              Berikutnya →
+              {tx('Berikutnya', 'Next')} →
             </button>
           </div>
         </div>
