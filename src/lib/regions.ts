@@ -3,6 +3,7 @@ import type { Locale } from './i18n'
 
 export interface ArchipelagoRegion {
   id: 'sumatera' | 'jawa' | 'bali-nusa' | 'kalimantan' | 'sulawesi' | 'maluku-papua'
+  orderLabel: string
   name: string
   nameEn: string
   shortName: string
@@ -14,6 +15,8 @@ export interface ArchipelagoRegion {
   descriptionEn: string
   provincePrefixes: string[]
   featuredSlugs: string[]
+  quickCities: Array<{ slug: string; name: string; nameEn: string }>
+  imageUrl: string
   gradient: string
 }
 
@@ -102,6 +105,7 @@ export const PROVINCE_NAMES_EN: Record<string, string> = {
 export const ARCHIPELAGO_REGIONS: ArchipelagoRegion[] = [
   {
     id: 'jawa',
+    orderLabel: '01',
     name: 'Jawa',
     nameEn: 'Java',
     shortName: 'Jawa',
@@ -124,10 +128,19 @@ export const ARCHIPELAGO_REGIONS: ArchipelagoRegion[] = [
       'kota-semarang',
       'kabupaten-banyuwangi',
     ],
+    quickCities: [
+      { slug: 'kota-bandung', name: 'Bandung', nameEn: 'Bandung' },
+      { slug: 'kota-yogyakarta', name: 'Yogyakarta', nameEn: 'Yogyakarta' },
+      { slug: 'kota-surabaya', name: 'Surabaya', nameEn: 'Surabaya' },
+      { slug: 'kota-malang', name: 'Malang', nameEn: 'Malang' },
+    ],
+    imageUrl:
+      'https://images.unsplash.com/photo-1584810359583-96fc3448beaa?auto=format&fit=crop&w=1000&q=80',
     gradient: 'linear-gradient(135deg, #0B1F3A 0%, #0D5C46 100%)',
   },
   {
     id: 'bali-nusa',
+    orderLabel: '02',
     name: 'Bali & Nusa Tenggara',
     nameEn: 'Bali & Lesser Sunda',
     shortName: 'Bali & Nusra',
@@ -148,10 +161,19 @@ export const ARCHIPELAGO_REGIONS: ArchipelagoRegion[] = [
       'kota-mataram',
       'kabupaten-lombok-tengah',
     ],
+    quickCities: [
+      { slug: 'kota-denpasar', name: 'Denpasar', nameEn: 'Denpasar' },
+      { slug: 'kabupaten-badung', name: 'Badung (Kuta/Uluwatu)', nameEn: 'Badung (Uluwatu)' },
+      { slug: 'kabupaten-manggarai-barat', name: 'Labuan Bajo', nameEn: 'Labuan Bajo' },
+      { slug: 'kota-mataram', name: 'Mataram (Lombok)', nameEn: 'Mataram (Lombok)' },
+    ],
+    imageUrl:
+      'https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&w=1000&q=80',
     gradient: 'linear-gradient(135deg, #134E4A 0%, #B45309 100%)',
   },
   {
     id: 'sumatera',
+    orderLabel: '03',
     name: 'Sumatera',
     nameEn: 'Sumatra',
     shortName: 'Sumatera',
@@ -172,10 +194,19 @@ export const ARCHIPELAGO_REGIONS: ArchipelagoRegion[] = [
       'kota-palembang',
       'kota-batam',
     ],
+    quickCities: [
+      { slug: 'kota-medan', name: 'Medan', nameEn: 'Medan' },
+      { slug: 'kabupaten-samosir', name: 'Samosir (Danau Toba)', nameEn: 'Lake Toba' },
+      { slug: 'kota-bukittinggi', name: 'Bukittinggi', nameEn: 'Bukittinggi' },
+      { slug: 'kota-palembang', name: 'Palembang', nameEn: 'Palembang' },
+    ],
+    imageUrl:
+      'https://images.unsplash.com/photo-1588668214407-6ea9a6d8c272?auto=format&fit=crop&w=1000&q=80',
     gradient: 'linear-gradient(135deg, #0F2942 0%, #15803D 100%)',
   },
   {
     id: 'kalimantan',
+    orderLabel: '04',
     name: 'Kalimantan',
     nameEn: 'Kalimantan (Borneo)',
     shortName: 'Kalimantan',
@@ -195,10 +226,19 @@ export const ARCHIPELAGO_REGIONS: ArchipelagoRegion[] = [
       'kota-banjarmasin',
       'kota-samarinda',
     ],
+    quickCities: [
+      { slug: 'kota-singkawang', name: 'Singkawang', nameEn: 'Singkawang' },
+      { slug: 'kota-balikpapan', name: 'Balikpapan', nameEn: 'Balikpapan' },
+      { slug: 'kota-pontianak', name: 'Pontianak', nameEn: 'Pontianak' },
+      { slug: 'kota-banjarmasin', name: 'Banjarmasin', nameEn: 'Banjarmasin' },
+    ],
+    imageUrl:
+      'https://images.unsplash.com/photo-1555400038-63f5ba517a47?auto=format&fit=crop&w=1000&q=80',
     gradient: 'linear-gradient(135deg, #064E3B 0%, #0F172A 100%)',
   },
   {
     id: 'sulawesi',
+    orderLabel: '05',
     name: 'Sulawesi',
     nameEn: 'Sulawesi (Celebes)',
     shortName: 'Sulawesi',
@@ -218,10 +258,19 @@ export const ARCHIPELAGO_REGIONS: ArchipelagoRegion[] = [
       'kabupaten-wakatobi',
       'kota-bitung',
     ],
+    quickCities: [
+      { slug: 'kota-manado', name: 'Manado (Bunaken)', nameEn: 'Manado (Bunaken)' },
+      { slug: 'kota-makassar', name: 'Makassar', nameEn: 'Makassar' },
+      { slug: 'kabupaten-tana-toraja', name: 'Tana Toraja', nameEn: 'Tana Toraja' },
+      { slug: 'kabupaten-wakatobi', name: 'Wakatobi', nameEn: 'Wakatobi' },
+    ],
+    imageUrl:
+      'https://images.unsplash.com/photo-1544551763-46a013bb70d5?auto=format&fit=crop&w=1000&q=80',
     gradient: 'linear-gradient(135deg, #0C4A6E 0%, #0D5C46 100%)',
   },
   {
     id: 'maluku-papua',
+    orderLabel: '06',
     name: 'Maluku & Papua',
     nameEn: 'Maluku & Papua',
     shortName: 'Maluku & Papua',
@@ -241,6 +290,14 @@ export const ARCHIPELAGO_REGIONS: ArchipelagoRegion[] = [
       'kota-sorong',
       'kota-ternate',
     ],
+    quickCities: [
+      { slug: 'kabupaten-raja-ampat', name: 'Raja Ampat', nameEn: 'Raja Ampat' },
+      { slug: 'kota-ambon', name: 'Ambon', nameEn: 'Ambon' },
+      { slug: 'kota-jayapura', name: 'Jayapura', nameEn: 'Jayapura' },
+      { slug: 'kota-ternate', name: 'Ternate', nameEn: 'Ternate' },
+    ],
+    imageUrl:
+      'https://images.unsplash.com/photo-1516690561799-46d8f74f9abf?auto=format&fit=crop&w=1000&q=80',
     gradient: 'linear-gradient(135deg, #0B1F3A 0%, #0284C7 100%)',
   },
 ]
