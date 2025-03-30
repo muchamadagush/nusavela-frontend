@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { createFileRoute, Link, useRouter } from '@tanstack/react-router'
 import {
   api,
   city,
@@ -16,6 +16,7 @@ import { getFallbackPlacesForCity } from '../lib/regions'
 import { DirectoryMap } from '../components/DirectoryMap'
 import { CommunityForm } from '../components/CommunityForm'
 import { Breadcrumbs } from '../components/Breadcrumbs'
+import { PlaceSmartMonetizationCard } from '../components/MonetizationWidget'
 
 export const Route = createFileRoute('/kota/$citySlug/$categorySlug/$placeSlug')({
   loader: async ({ params: p }) => {
@@ -66,8 +67,8 @@ export const Route = createFileRoute('/kota/$citySlug/$categorySlug/$placeSlug')
 
 function Detail() {
   const { locale, tx } = useI18n()
+  const router = useRouter()
   const d = Route.useLoaderData()
-  const commercial = !['rumah-sakit', 'layanan-publik'].includes(d.category.slug)
   const sponsorLabel = sponsorBadgeLabel(d.place)
   const ticketRangeRaw = formatTicketRange(
     d.place.ticket_price_min,
@@ -78,8 +79,6 @@ function Detail() {
   const whatsappDigits = sanitizePhoneDigits(d.place.whatsapp)
   const phoneDigits = sanitizePhoneDigits(d.place.phone)
   const imageUrl = safeLink(d.place.image_url)
-  const hotelUrl = safeLink(d.place.affiliate_hotel_url)
-  const ticketUrl = safeLink(d.place.affiliate_ticket_url)
 
   const displayCityName = localizeCityName(d.city.name, locale)
   const displayCatName = localizeCategoryName(
@@ -220,56 +219,14 @@ function Detail() {
               )}
             </div>
 
-            {commercial && (hotelUrl || ticketUrl) && (
-              <div className="submission-card">
-                <h3>
-                  {tx(
-                    'Pemesanan Perjalanan & Tiket',
-                    'Travel & Ticket Booking',
-                  )}
-                </h3>
-                <div className="row">
-                  {hotelUrl && (
-                    <p style={{ margin: 0 }}>
-                      <a
-                        className="button affiliate"
-                        href={hotelUrl}
-                        onClick={() =>
-                          trackClick(d.city.id, d.place.id, 'affiliate_hotel')
-                        }
-                        target="_blank"
-                        rel="sponsored noopener noreferrer"
-                      >
-                        🏨 {tx('Cek hotel terdekat ↗', 'Check nearby hotels ↗')}
-                      </a>
-                      <small className="muted">
-                        {' '}
-                        {tx('Tautan afiliasi', 'Affiliate link')}
-                      </small>
-                    </p>
-                  )}
-                  {ticketUrl && (
-                    <p style={{ margin: 0 }}>
-                      <a
-                        className="button affiliate"
-                        href={ticketUrl}
-                        onClick={() =>
-                          trackClick(d.city.id, d.place.id, 'affiliate_ticket')
-                        }
-                        target="_blank"
-                        rel="sponsored noopener noreferrer"
-                      >
-                        🎟️ {tx('Cek tiket wisata ↗', 'Check attraction tickets ↗')}
-                      </a>
-                      <small className="muted">
-                        {' '}
-                        {tx('Tautan afiliasi', 'Affiliate link')}
-                      </small>
-                    </p>
-                  )}
-                </div>
-              </div>
-            )}
+            <PlaceSmartMonetizationCard
+              place={d.place}
+              city={d.city}
+              categorySlug={d.category.slug}
+              onSponsoredActivated={() => {
+                void router.invalidate()
+              }}
+            />
           </section>
 
           <CommunityForm cityId={d.city.id} placeId={d.place.id} defaultOpen />

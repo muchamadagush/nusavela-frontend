@@ -16,6 +16,7 @@ import { PlacesPanel } from '../components/PlacesPanel'
 import { CommunityForm } from '../components/CommunityForm'
 import { Breadcrumbs } from '../components/Breadcrumbs'
 import { CategoryPills } from '../components/CategoryPills'
+import { CityTravelBookingHub } from '../components/MonetizationWidget'
 
 export const Route = createFileRoute('/kota/$citySlug/')({
   loader: async ({ params }) => {
@@ -192,6 +193,8 @@ function Dashboard() {
           })}
         </div>
       </section>
+
+      <CityTravelBookingHub city={d.city} />
 
       <div className="bento section">
         <PlacesPanel city={d.city} places={d.tourism} />

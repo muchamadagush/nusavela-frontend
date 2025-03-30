@@ -1995,3 +1995,109 @@ textarea {
     border-radius: 3px;
   }
 }
+
+/* Effortless Programmatic Monetization Hub & Self-Serve UMKM Checkout */
+.monetization-hub-panel {
+  border: 1.5px solid var(--accent-luxury);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--accent-gold-bg) 55%, var(--bg-surface)) 0%,
+    var(--bg-surface) 100%
+  );
+}
+
+.monetization-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.monetization-action-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 18px;
+  border-radius: 16px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-hairline);
+  text-decoration: none;
+  color: var(--text-primary);
+  box-shadow: var(--shadow-luxury);
+  transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.monetization-action-card:hover {
+  transform: translateY(-3px);
+  border-color: var(--action-affiliate);
+  box-shadow: var(--shadow-hover);
+}
+
+.monetization-action-card strong {
+  display: block;
+  color: var(--brand-primary);
+  font-size: 15px;
+  margin-bottom: 4px;
+}
+
+.monetization-action-card p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.monetization-card-icon {
+  font-size: 28px;
+  flex-shrink: 0;
+}
+
+.stay22-embed-wrap {
+  margin-top: 18px;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid var(--border-hairline);
+  background: var(--bg-subtle);
+}
+
+.place-monetization-box {
+  margin-top: 20px;
+  border: 1.5px solid var(--accent-luxury);
+  background: color-mix(in srgb, var(--accent-gold-bg) 42%, var(--bg-surface));
+}
+
+.self-serve-promo-bar {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px dashed var(--border-hairline);
+}
+
+.self-serve-form {
+  margin-top: 16px;
+}
+
+.sponsor-plans-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.sponsor-plan-card {
+  padding: 14px;
+  border-radius: 14px;
+  border: 1.5px solid var(--border-hairline);
+  background: var(--bg-surface);
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.sponsor-plan-card.selected {
+  border-color: var(--brand-secondary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand-secondary) 16%, transparent);
+}
+
+@media (max-width: 1023px) {
+  .monetization-cards-grid,
+  .sponsor-plans-grid {
+    grid-template-columns: 1fr;
+  }
+}

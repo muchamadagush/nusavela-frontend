@@ -7,6 +7,7 @@ import { DirectoryMap } from '../components/DirectoryMap'
 import { PlaceCard } from '../components/PlaceCard'
 import { Breadcrumbs } from '../components/Breadcrumbs'
 import { CategoryPills } from '../components/CategoryPills'
+import { CityTravelBookingHub } from '../components/MonetizationWidget'
 import { useRef, useState } from 'react'
 
 export const Route = createFileRoute('/kota/$citySlug/$categorySlug/')({
@@ -337,6 +338,7 @@ function Directory() {
           center={[search.lat ?? d.city.latitude, search.lng ?? d.city.longitude]}
         />
       </div>
+      <CityTravelBookingHub city={d.city} categorySlug={d.category.slug} />
     </main>
   )
 }

@@ -2,6 +2,7 @@ import { Link } from '@tanstack/react-router'
 import { activeSponsor, safeLink, sponsorBadgeLabel, type Place } from '../lib/api'
 import { formatTicketRange } from '../lib/format'
 import { useI18n } from '../lib/i18n'
+import { isCommercialCategory } from '../lib/monetization'
 import { CATEGORY_META } from '../lib/regions'
 
 export function PlaceCard({
@@ -20,6 +21,11 @@ export function PlaceCard({
     locale === 'en' && ticketRaw === 'Gratis' ? 'Free' : ticketRaw
   const imageUrl = safeLink(p.image_url)
   const catMeta = CATEGORY_META[categorySlug] ?? CATEGORY_META.wisata
+  const commercial = isCommercialCategory(categorySlug)
+
+  const autoHotelUrl =
+    safeLink(p.affiliate_hotel_url) ||
+    `https://www.stay22.com/allez/roam?aid=nusavela&lat=${p.latitude.toFixed(6)}&lng=${p.longitude.toFixed(6)}&address=${encodeURIComponent(p.name)}`
 
   return (
     <article className={`card place-card ${activeSponsor(p) ? 'sponsored' : ''}`}>
@@ -126,6 +132,16 @@ export function PlaceCard({
           >
             {tx('Rute ke lokasi ↗', 'Get Directions ↗')}
           </a>
+          {commercial && (
+            <a
+              href={autoHotelUrl}
+              target="_blank"
+              rel="sponsored noopener noreferrer"
+              className="button affiliate button-sm"
+            >
+              🏨 {tx('Hotel Terdekat ↗', 'Nearby Hotels ↗')}
+            </a>
+          )}
         </div>
       </div>
     </article>
