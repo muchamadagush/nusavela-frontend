@@ -22,7 +22,22 @@ try {
     if (path.startsWith('/kota/')) assert.ok(response.headers.get('cache-control')?.includes('s-maxage=3600'))
   }
   assert.ok(requests.some(u => u.searchParams.get('lat') === '0' && u.searchParams.get('is_24_hours') === 'false'))
+  const sitemap = await server.fetch(new Request('http://localhost/sitemap.xml'))
+  assert.equal(sitemap.status, 200)
+  assert.ok(sitemap.headers.get('content-type').includes('application/xml'))
+  const xml = await sitemap.text()
+  for (const path of ['/', '/kota/kota-uji', '/kota/kota-uji/wisata']) {
+    assert.ok(xml.includes(`<loc>https://nusavela.com${path}</loc>`))
+  }
+  assert.equal((xml.match(/<url>/g) || []).length, 3, 'Only real API cities and categories are indexed')
+  const robots = await server.fetch(new Request('http://localhost/robots.txt'))
+  assert.equal(robots.status, 200)
+  assert.ok((await robots.text()).includes('Sitemap: https://nusavela.com/sitemap.xml'))
   globalThis.fetch = async () => { throw new Error('simulated API outage') }
+  const unavailableSitemap = await server.fetch(new Request('http://localhost/sitemap.xml'))
+  assert.equal(unavailableSitemap.status, 503)
+  assert.equal(unavailableSitemap.headers.get('cache-control'), 'no-store')
+
   const outage = await server.fetch(new Request('http://localhost/')); const html = await outage.text()
   assert.equal(outage.status, 200); assert.ok(html.includes('Daftar kota belum dapat dimuat'))
   console.log('SSR integration: 4 routes, cache headers, JSON-LD, escaped content, coordinates and API outage passed')

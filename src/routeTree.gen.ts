@@ -10,6 +10,8 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as RobotsDottxtRouteImport } from './routes/robots[.]txt'
+import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as KotaCitySlugIndexRouteImport } from './routes/kota.$citySlug.index'
 import { Route as KotaCitySlugCategorySlugIndexRouteImport } from './routes/kota.$citySlug.$categorySlug.index'
 import { Route as KotaCitySlugCategorySlugPlaceSlugRouteImport } from './routes/kota.$citySlug.$categorySlug.$placeSlug'
@@ -17,6 +19,16 @@ import { Route as KotaCitySlugCategorySlugPlaceSlugRouteImport } from './routes/
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RobotsDottxtRoute = RobotsDottxtRouteImport.update({
+  id: '/robots.txt',
+  path: '/robots.txt',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
+  id: '/sitemap.xml',
+  path: '/sitemap.xml',
   getParentRoute: () => rootRouteImport,
 } as any)
 const KotaCitySlugIndexRoute = KotaCitySlugIndexRouteImport.update({
@@ -39,12 +51,16 @@ const KotaCitySlugCategorySlugPlaceSlugRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/robots.txt': typeof RobotsDottxtRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/kota/$citySlug/': typeof KotaCitySlugIndexRoute
   '/kota/$citySlug/$categorySlug/$placeSlug': typeof KotaCitySlugCategorySlugPlaceSlugRoute
   '/kota/$citySlug/$categorySlug/': typeof KotaCitySlugCategorySlugIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/robots.txt': typeof RobotsDottxtRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/kota/$citySlug': typeof KotaCitySlugIndexRoute
   '/kota/$citySlug/$categorySlug/$placeSlug': typeof KotaCitySlugCategorySlugPlaceSlugRoute
   '/kota/$citySlug/$categorySlug': typeof KotaCitySlugCategorySlugIndexRoute
@@ -52,6 +68,8 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/robots.txt': typeof RobotsDottxtRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/kota/$citySlug/': typeof KotaCitySlugIndexRoute
   '/kota/$citySlug/$categorySlug/$placeSlug': typeof KotaCitySlugCategorySlugPlaceSlugRoute
   '/kota/$citySlug/$categorySlug/': typeof KotaCitySlugCategorySlugIndexRoute
@@ -60,18 +78,24 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/robots.txt'
+    | '/sitemap.xml'
     | '/kota/$citySlug/'
     | '/kota/$citySlug/$categorySlug/$placeSlug'
     | '/kota/$citySlug/$categorySlug/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/robots.txt'
+    | '/sitemap.xml'
     | '/kota/$citySlug'
     | '/kota/$citySlug/$categorySlug/$placeSlug'
     | '/kota/$citySlug/$categorySlug'
   id:
     | '__root__'
     | '/'
+    | '/robots.txt'
+    | '/sitemap.xml'
     | '/kota/$citySlug/'
     | '/kota/$citySlug/$categorySlug/$placeSlug'
     | '/kota/$citySlug/$categorySlug/'
@@ -79,6 +103,8 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  RobotsDottxtRoute: typeof RobotsDottxtRoute
+  SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   KotaCitySlugIndexRoute: typeof KotaCitySlugIndexRoute
   KotaCitySlugCategorySlugPlaceSlugRoute: typeof KotaCitySlugCategorySlugPlaceSlugRoute
   KotaCitySlugCategorySlugIndexRoute: typeof KotaCitySlugCategorySlugIndexRoute
@@ -91,6 +117,20 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/robots.txt': {
+      id: '/robots.txt'
+      path: '/robots.txt'
+      fullPath: '/robots.txt'
+      preLoaderRoute: typeof RobotsDottxtRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sitemap.xml': {
+      id: '/sitemap.xml'
+      path: '/sitemap.xml'
+      fullPath: '/sitemap.xml'
+      preLoaderRoute: typeof SitemapDotxmlRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/kota/$citySlug/': {
@@ -119,6 +159,8 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  RobotsDottxtRoute: RobotsDottxtRoute,
+  SitemapDotxmlRoute: SitemapDotxmlRoute,
   KotaCitySlugIndexRoute: KotaCitySlugIndexRoute,
   KotaCitySlugCategorySlugPlaceSlugRoute:
     KotaCitySlugCategorySlugPlaceSlugRoute,
