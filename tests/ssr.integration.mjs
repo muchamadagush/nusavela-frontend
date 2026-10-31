@@ -4,9 +4,12 @@ const originalFetch = globalThis.fetch
 const city = { id: 'test-city', name: 'Kota Uji', slug: 'kota-uji', latitude: -6.9, longitude: 107.6 }
 const place = { id: 'test-place', name: 'Tempat <Uji>', slug: 'tempat-uji', address: null, latitude: -6.9, longitude: 107.6, is_24_hours: true, is_sponsored: false }
 const requests = []
+let emergencyContacts = [{ id: 1, service_name: 'Ambulans Uji', phone_number: '119', is_active: true, is_24_hours: true, source_url: 'https://example.org/verified', verified_at: '2026-10-31T00:00:00Z' }]
+let emergencyUnavailable = false
 globalThis.fetch = async (input) => {
   const url = new URL(String(input)); requests.push(url)
   const path = url.pathname
+  if (path.endsWith('/emergency')) return emergencyUnavailable ? new Response('', { status: 503 }) : Response.json(emergencyContacts)
   const payload = path.endsWith('/cities') ? [city] : path.endsWith('/cities/kota-uji') ? city : path.endsWith('/categories') ? [{ slug: 'wisata', name: 'Wisata' }] : path.endsWith('/tempat-uji') ? place : path.endsWith('/wisata') ? [place] : undefined
   return payload === undefined ? new Response('', { status: 404 }) : Response.json(payload)
 }
@@ -22,6 +25,22 @@ try {
     if (path.startsWith('/kota/')) assert.ok(response.headers.get('cache-control')?.includes('s-maxage=3600'))
   }
   assert.ok(requests.some(u => u.searchParams.get('lat') === '0' && u.searchParams.get('is_24_hours') === 'false'))
+  async function cityHtml() {
+    const response = await server.fetch(new Request('http://localhost/kota/kota-uji'))
+    assert.equal(response.status, 200)
+    return response.text()
+  }
+  const emergencyHtml = await cityHtml()
+  assert.ok(emergencyHtml.includes('href="tel:119"'))
+  assert.ok(emergencyHtml.includes('Sumber verifikasi'))
+  emergencyContacts = [{ ...emergencyContacts[0], is_active: false }]
+  assert.ok(!(await cityHtml()).includes('href="tel:119"'), 'Inactive contacts must not be callable')
+  emergencyContacts = [{ ...emergencyContacts[0], is_active: true, source_url: 'javascript:alert(1)' }]
+  assert.ok(!(await cityHtml()).includes('href="tel:119"'), 'Unsafe verification sources must not authorize a contact')
+  emergencyContacts = []
+  assert.ok((await cityHtml()).includes('Belum ada kontak darurat terverifikasi'))
+  emergencyUnavailable = true
+  assert.ok((await cityHtml()).includes('Kontak darurat belum dapat dimuat'))
   const sitemap = await server.fetch(new Request('http://localhost/sitemap.xml'))
   assert.equal(sitemap.status, 200)
   assert.ok(sitemap.headers.get('content-type').includes('application/xml'))
@@ -40,5 +59,5 @@ try {
 
   const outage = await server.fetch(new Request('http://localhost/')); const html = await outage.text()
   assert.equal(outage.status, 200); assert.ok(html.includes('Daftar kota belum dapat dimuat'))
-  console.log('SSR integration: 4 routes, cache headers, JSON-LD, escaped content, coordinates and API outage passed')
+  console.log('SSR integration: 4 page routes, emergency contacts (verified/inactive/unsafe/empty/outage), sitemap, robots, SEO and API outage passed')
 } finally { globalThis.fetch = originalFetch }
