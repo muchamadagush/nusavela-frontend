@@ -78,7 +78,7 @@ export async function api<T>(
 export const segment = encodeURIComponent
 
 export const cities = () => api('/cities', citySchema.array())
-export const city = (slug: string) => api(/cities/, citySchema)
+export const city = (slug: string) => api(`/cities/${segment(slug)}`, citySchema)
 export const categories = () => api('/categories', categorySchema.array())
 
 function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
