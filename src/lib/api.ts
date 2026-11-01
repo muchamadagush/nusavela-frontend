@@ -77,39 +77,9 @@ export async function api<T>(
 
 export const segment = encodeURIComponent
 
-export async function cities(): Promise<City[]> {
-  try {
-    const list = await api('/cities', citySchema.array())
-    return list.length > 0 ? list : DEFAULT_CITIES
-  } catch {
-    return DEFAULT_CITIES
-  }
-}
-
-export async function city(slug: string): Promise<City> {
-  try {
-    return await api(`/cities/${segment(slug)}`, citySchema)
-  } catch {
-    const normalized = slug.toLowerCase().trim()
-    const found = DEFAULT_CITIES.find(
-      c =>
-        c.slug === normalized ||
-        c.short_name?.toLowerCase() === normalized ||
-        c.name.toLowerCase() === normalized,
-    )
-    if (found) return found
-    throw new Error(`Kota "${slug}" tidak ditemukan`)
-  }
-}
-
-export async function categories(): Promise<Category[]> {
-  try {
-    const list = await api('/categories', categorySchema.array())
-    return list.length > 0 ? list : DEFAULT_CATEGORIES
-  } catch {
-    return DEFAULT_CATEGORIES
-  }
-}
+export const cities = () => api('/cities', citySchema.array())
+export const city = (slug: string) => api(`/cities/${segment(slug)}`, citySchema)
+export const categories = () => api('/categories', categorySchema.array())
 
 function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const toRad = (deg: number) => (deg * Math.PI) / 180
@@ -218,3 +188,4 @@ export function seo(
     ],
   }
 }
+
