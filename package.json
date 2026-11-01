@@ -11,7 +11,9 @@
     "build": "vite build",
     "typecheck": "tsc --noEmit",
     "test": "node --test tests/*.test.mjs",
-    "test:integration": "node tests/ssr.integration.mjs"
+    "test:integration": "node tests/ssr.integration.mjs",
+    "start": "node scripts/serve.mjs",
+    "test:runtime": "node scripts/runtime-smoke.mjs"
   },
   "dependencies": {
     "@tanstack/react-start": "latest",
