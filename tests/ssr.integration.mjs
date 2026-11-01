@@ -38,6 +38,8 @@ try {
   assert.ok(emergencyHtml.includes('Sumber verifikasi'))
   assert.ok(emergencyHtml.replace(/<!--.*?-->/g, '').includes('28 °C'))
   assert.ok(emergencyHtml.includes('Sumber: OpenWeather'))
+  assert.ok(emergencyHtml.includes('Faskes dengan IGD 24 jam'))
+  assert.ok(requests.some(u => u.pathname.endsWith('/rumah-sakit') && u.searchParams.get('emergency_only') === 'true'))
   assert.ok(emergencyHtml.includes('Festival Uji'))
   assert.ok(emergencyHtml.includes('Gratis'))
   assert.ok(emergencyHtml.includes('Media Uji'))
