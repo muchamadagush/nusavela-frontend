@@ -9,6 +9,7 @@ let emergencyUnavailable = false
 globalThis.fetch = async (input) => {
   const url = new URL(String(input)); requests.push(url)
   const path = url.pathname
+  if (path.endsWith('/weather')) return Response.json({ temperature_c: 27.5, description: 'Cerah berawan', observed_at: 1793491200, attribution: { name: 'OpenWeather', url: 'https://openweathermap.org/' } })
   if (path.endsWith('/emergency')) return emergencyUnavailable ? new Response('', { status: 503 }) : Response.json(emergencyContacts)
   const payload = path.endsWith('/cities') ? [city] : path.endsWith('/cities/kota-uji') ? city : path.endsWith('/categories') ? [{ slug: 'wisata', name: 'Wisata' }] : path.endsWith('/tempat-uji') ? place : path.endsWith('/wisata') ? [place] : undefined
   return payload === undefined ? new Response('', { status: 404 }) : Response.json(payload)
@@ -33,6 +34,8 @@ try {
   const emergencyHtml = await cityHtml()
   assert.ok(emergencyHtml.includes('href="tel:119"'))
   assert.ok(emergencyHtml.includes('Sumber verifikasi'))
+  assert.ok(emergencyHtml.replace(/<!--.*?-->/g, '').includes('28 °C'))
+  assert.ok(emergencyHtml.includes('Sumber: OpenWeather'))
   emergencyContacts = [{ ...emergencyContacts[0], is_active: false }]
   assert.ok(!(await cityHtml()).includes('href="tel:119"'), 'Inactive contacts must not be callable')
   emergencyContacts = [{ ...emergencyContacts[0], is_active: true, source_url: 'javascript:alert(1)' }]
