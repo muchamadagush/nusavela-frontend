@@ -4,7 +4,7 @@ export type City = z.infer<typeof citySchema>
 export const categorySchema = z.object({ slug: z.string(), name: z.string() })
 export const placeSchema = z.object({ id: z.string(), name: z.string(), slug: z.string(), address: z.string().nullable(), latitude: z.number(), longitude: z.number(), is_24_hours: z.boolean(), is_sponsored: z.boolean(), sponsored_until: z.string().nullable().optional(), is_verified: z.boolean().optional(), distance_meters: z.number().nullable().optional(), opening_hours: z.string().nullable().optional(), description: z.string().nullable().optional(), affiliate_hotel_url: z.string().nullable().optional(), affiliate_ticket_url: z.string().nullable().optional() })
 export type Place = z.infer<typeof placeSchema>
-const base = (import.meta.env.VITE_API_URL || 'http://localhost:8080').replace(/\/$/, '')
+const base = ((import.meta.env.SSR && process.env.RUST_API_URL) || import.meta.env.VITE_API_URL || 'http://localhost:8080').replace(/\/$/, '')
 export async function api<T>(path: string, schema: z.ZodType<T>, init?: RequestInit): Promise<T> {
   const response = await fetch(`${base}/api/v1${path}`, { ...init, signal: AbortSignal.timeout(12000), headers: { 'Content-Type': 'application/json', ...init?.headers } })
   if (!response.ok) throw new Error(`API tidak tersedia (${response.status})`)
