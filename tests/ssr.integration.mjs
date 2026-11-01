@@ -9,6 +9,7 @@ let emergencyUnavailable = false
 globalThis.fetch = async (input) => {
   const url = new URL(String(input)); requests.push(url)
   const path = url.pathname
+  if (path.endsWith('/events')) return Response.json([{ id: 'event-1', title: 'Festival Uji', venue_name: 'Alun-alun', start_datetime: '2026-11-02T00:00:00Z', end_datetime: '2026-11-02T08:00:00Z', ticket_price: 0, is_sponsored: false }])
   if (path.endsWith('/news')) return Response.json([{ id: 'news-1', title: 'Berita <Uji>', summary: 'Ringkasan '.repeat(30), source_name: 'Media Uji', source_url: 'https://example.org/news', published_at: '2026-11-01T00:00:00Z' }])
   if (path.endsWith('/weather')) return Response.json({ temperature_c: 27.5, description: 'Cerah berawan', observed_at: 1793491200, attribution: { name: 'OpenWeather', url: 'https://openweathermap.org/' } })
   if (path.endsWith('/emergency')) return emergencyUnavailable ? new Response('', { status: 503 }) : Response.json(emergencyContacts)
@@ -37,6 +38,8 @@ try {
   assert.ok(emergencyHtml.includes('Sumber verifikasi'))
   assert.ok(emergencyHtml.replace(/<!--.*?-->/g, '').includes('28 °C'))
   assert.ok(emergencyHtml.includes('Sumber: OpenWeather'))
+  assert.ok(emergencyHtml.includes('Festival Uji'))
+  assert.ok(emergencyHtml.includes('Gratis'))
   assert.ok(emergencyHtml.includes('Media Uji'))
   assert.ok(emergencyHtml.includes('https://example.org/news'))
   assert.ok(!emergencyHtml.includes('Ringkasan '.repeat(19)), 'RSS summary must be capped at 160 characters')
