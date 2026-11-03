@@ -3,8 +3,12 @@ import { Readable } from 'node:stream'
 import { pipeline } from 'node:stream/promises'
 import { readFile, realpath, stat } from 'node:fs/promises'
 import { resolve, sep, extname } from 'node:path'
-import { default as app } from '../dist/server/server.js'
-const root = resolve('dist/client')
+import { existsSync } from 'node:fs'
+const serverModulePath = existsSync(new URL('../dist/server/server.js', import.meta.url))
+  ? '../dist/server/server.js'
+  : '../node_modules/.nitro/vite/services/ssr/index.js'
+const { default: app } = await import(serverModulePath)
+const root = existsSync(resolve('dist/client')) ? resolve('dist/client') : resolve('.output/public')
 const port = Number(process.env.PORT || 3000)
 const origin = process.env.PUBLIC_ORIGIN || `http://localhost:${port}`
 const types = { '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.png': 'image/png', '.woff2': 'font/woff2' }

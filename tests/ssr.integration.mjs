@@ -1,5 +1,9 @@
 import assert from 'node:assert/strict'
-import { default as server } from '../dist/server/server.js'
+import { existsSync } from 'node:fs'
+const serverModulePath = existsSync(new URL('../dist/server/server.js', import.meta.url))
+  ? '../dist/server/server.js'
+  : '../node_modules/.nitro/vite/services/ssr/index.js'
+const { default: server } = await import(serverModulePath)
 const originalFetch = globalThis.fetch
 const city = { id: 'test-city', name: 'Kota Uji', slug: 'kota-uji', latitude: -6.9, longitude: 107.6 }
 const place = { id: 'test-place', name: 'Tempat <Uji>', slug: 'tempat-uji', address: null, latitude: -6.9, longitude: 107.6, is_24_hours: true, is_sponsored: false }
