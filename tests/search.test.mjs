@@ -51,7 +51,6 @@ test('defaults match the backend contract', () => {
   assert.deepEqual(directorySearch.parse({}), {
     radius: 25000,
     open24h: false,
-    emergencyOnly: undefined,
     sort: 'distance',
     page: 1,
   })
