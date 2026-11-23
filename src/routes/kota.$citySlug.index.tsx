@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useRouter } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
-import { api, categories, city, cacheHeaders, seo, placeSchema } from '../lib/api'
+import { api, ApiError, categories, city, cacheHeaders, seo, placeSchema } from '../lib/api'
 import { formatTimezoneLabel } from '../lib/format'
 import { localizeCategoryName, localizeCityName, useI18n } from '../lib/i18n'
 import { syncCityFromPublicApi } from '../lib/monetization'
@@ -153,13 +153,55 @@ function Dashboard() {
         ),
       )
       await router.invalidate()
-    } catch {
-      setSyncMessage(
-        tx(
-          'Sinkronisasi API publik sedang sibuk atau offline. Silakan coba beberapa saat lagi.',
-          'Public API sync is busy or offline. Please try again shortly.',
-        ),
-      )
+    } catch (err: unknown) {
+      if (
+        err instanceof Error &&
+        (err.name === 'TimeoutError' ||
+          err.name === 'AbortError' ||
+          err.message.toLowerCase().includes('timeout') ||
+          err.message.toLowerCase().includes('aborted'))
+      ) {
+        setSyncMessage(
+          tx(
+            'Waktu sinkronisasi habis (server publik OpenStreetMap Overpass sedang padat). Silakan coba beberapa saat lagi.',
+            'Sync timed out (public OpenStreetMap Overpass server is busy). Please try again shortly.',
+          ),
+        )
+      } else if (err instanceof ApiError && err.status === 404) {
+        setSyncMessage(
+          tx(
+            `Data kota "${d.city.name}" belum terdaftar di database backend. Jalankan seeder wilayah terlebih dahulu.`,
+            `City data for "${displayCityName}" not found in database. Please run wilayah seeder first.`,
+          ),
+        )
+      } else if (err instanceof ApiError && err.status === 429) {
+        setSyncMessage(
+          tx(
+            'Terlalu banyak permintaan sinkronisasi (rate limit). Tunggu 1 menit sebelum mencoba lagi.',
+            'Too many sync requests (rate limit). Please wait 1 minute before trying again.',
+          ),
+        )
+      } else if (
+        err instanceof TypeError ||
+        (err instanceof Error &&
+          (err.message.toLowerCase().includes('failed to fetch') ||
+            err.message.toLowerCase().includes('networkerror') ||
+            err.message.toLowerCase().includes('connection refused')))
+      ) {
+        setSyncMessage(
+          tx(
+            'Tidak dapat terhubung ke Backend API (port 8080 offline). Pastikan service backend Rust sedang berjalan.',
+            'Cannot connect to Backend API (port 8080 offline). Please ensure the Rust backend service is running.',
+          ),
+        )
+      } else {
+        setSyncMessage(
+          tx(
+            'Sinkronisasi API publik sedang sibuk atau offline. Silakan coba beberapa saat lagi.',
+            'Public API sync is busy or offline. Please try again shortly.',
+          ),
+        )
+      }
     } finally {
       setSyncBusy(false)
     }

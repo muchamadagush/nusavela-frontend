@@ -61,17 +61,45 @@ const base = (
   'http://localhost:8080'
 ).replace(/\/$/, '')
 
+export class ApiError extends Error {
+  status: number
+  code?: string
+
+  constructor(status: number, message: string, code?: string) {
+    super(message)
+    this.name = 'ApiError'
+    this.status = status
+    this.code = code
+  }
+}
+
 export async function api<T>(
   path: string,
   schema: z.ZodType<T>,
   init?: RequestInit,
 ): Promise<T> {
+  const signal = init?.signal ?? AbortSignal.timeout(12000)
   const response = await fetch(`${base}/api/v1${path}`, {
     ...init,
-    signal: AbortSignal.timeout(12000),
+    signal,
     headers: { 'Content-Type': 'application/json', ...init?.headers },
   })
-  if (!response.ok) throw new Error(`API tidak tersedia (${response.status})`)
+  if (!response.ok) {
+    let code: string | undefined
+    let message = `API tidak tersedia (${response.status})`
+    try {
+      const data = await response.json()
+      if (data?.error?.message) {
+        message = data.error.message
+      }
+      if (data?.error?.code) {
+        code = data.error.code
+      }
+    } catch {
+      // response body was not valid JSON
+    }
+    throw new ApiError(response.status, message, code)
+  }
   return schema.parse(await response.json())
 }
 

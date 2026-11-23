@@ -194,10 +194,13 @@ export const citySyncResultSchema = z.object({
   sources: z.array(z.string()),
 })
 
-export async function syncCityFromPublicApi(citySlug: string) {
+export async function syncCityFromPublicApi(citySlug: string, timeoutMs = 40000) {
   return api(
     `/sync/city/${encodeURIComponent(citySlug)}`,
     citySyncResultSchema,
-    { method: 'POST' },
+    {
+      method: 'POST',
+      signal: AbortSignal.timeout(timeoutMs),
+    },
   )
 }
