@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useRouter } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
-import { api, ApiError, categories, city, cacheHeaders, seo, placeSchema } from '../lib/api'
+import { api, ApiError, API_BASE, categories, city, cacheHeaders, seo, placeSchema } from '../lib/api'
 import { formatTimezoneLabel } from '../lib/format'
 import { localizeCategoryName, localizeCityName, useI18n } from '../lib/i18n'
 import { syncCityFromPublicApi } from '../lib/monetization'
@@ -190,8 +190,8 @@ function Dashboard() {
       ) {
         setSyncMessage(
           tx(
-            'Tidak dapat terhubung ke Backend API (port 8080 offline). Pastikan service backend Rust sedang berjalan.',
-            'Cannot connect to Backend API (port 8080 offline). Please ensure the Rust backend service is running.',
+            `Tidak dapat terhubung ke Backend API (${API_BASE} offline/unreachable). Pastikan service backend aktif di port tersebut.`,
+            `Cannot connect to Backend API (${API_BASE} offline/unreachable). Please ensure backend service is active on that port.`,
           ),
         )
       } else {

@@ -55,11 +55,13 @@ export const sitemapPlaceSchema = z.object({
 })
 export type SitemapPlace = z.infer<typeof sitemapPlaceSchema>
 
-const base = (
+export const API_BASE = (
   (import.meta.env.SSR && process.env.RUST_API_URL) ||
   import.meta.env.VITE_API_URL ||
   'http://localhost:8080'
 ).replace(/\/$/, '')
+
+const base = API_BASE
 
 export class ApiError extends Error {
   status: number
