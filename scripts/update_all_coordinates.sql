@@ -2,7 +2,6 @@
 UPDATE cities AS c SET
     latitude = v.latitude,
     longitude = v.longitude,
-    geom = ST_SetSRID(ST_MakePoint(v.longitude, v.latitude), 4326),
     updated_at = now()
 FROM (VALUES
   ('1101', 3.067979, 97.468771),

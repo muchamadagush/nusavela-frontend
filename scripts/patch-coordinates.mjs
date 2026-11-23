@@ -98,7 +98,6 @@ const sqlContent = `-- Migration 0010: Update all 514 Indonesian Cities with Aut
 UPDATE cities AS c SET
     latitude = v.latitude,
     longitude = v.longitude,
-    geom = ST_SetSRID(ST_MakePoint(v.longitude, v.latitude), 4326),
     updated_at = now()
 FROM (VALUES
 ${sqlValues}
